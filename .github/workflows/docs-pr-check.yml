@@ -30,12 +30,19 @@ jobs:
               run_id: run.id,
             });
             const docsArtifact = artifacts.find(a => a.name.startsWith('docs-html-pr-'));
+            if (!docsArtifact) {
+              core.warning('No docs artifact found for this workflow run.');
+            }
 
             const artifactUrl = docsArtifact
               ? `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${run.id}/artifacts/${docsArtifact.id}`
               : null;
 
             const buildSucceeded = run.conclusion === 'success';
+            // Distinguish between a failed build and a successful build with a missing artifact.
+            const conclusion = !buildSucceeded ? 'failure'
+              : artifactUrl ? 'success'
+              : 'neutral';
 
             await github.rest.checks.create({
               owner: context.repo.owner,
@@ -43,15 +50,17 @@ jobs:
               name: 'Check the rendered docs here!',
               head_sha: run.head_sha,
               status: 'completed',
-              conclusion: buildSucceeded && artifactUrl ? 'success' : 'failure',
+              conclusion,
               details_url: artifactUrl
                 ?? `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${run.id}`,
               output: {
                 title: artifactUrl
                   ? 'Rendered docs are available'
-                  : 'Rendered docs artifact not found',
+                  : buildSucceeded
+                    ? 'Rendered docs artifact not found despite successful build'
+                    : 'Docs build failed',
                 summary: artifactUrl
-                  ? `Gallery examples were executed and the rendered HTML was uploaded as an artifact.\n\n[Download rendered docs](${artifactUrl})`
+                  ? `The rendered documentation was built and uploaded as an artifact.\n\n[Download rendered docs](${artifactUrl})`
                   : `The docs build did not produce an artifact. Check the [workflow run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${run.id}) for details.`,
               },
             });
