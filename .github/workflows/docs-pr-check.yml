@@ -52,6 +52,6 @@ jobs:
                   : 'Rendered docs artifact not found',
                 summary: artifactUrl
                   ? `Gallery examples were executed and the rendered HTML was uploaded as an artifact.\n\n[Download rendered docs](${artifactUrl})`
-                  : 'The docs build did not produce an artifact. Check the [workflow run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${run.id}) for details.',
+                  : `The docs build did not produce an artifact. Check the [workflow run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${run.id}) for details.`,
               },
             });
