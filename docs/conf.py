@@ -63,7 +63,7 @@ sphinx_gallery_conf = {
         "repo": "health_ml_tutorial",
         "binderhub_url": "https://mybinder.org",
         "branch": "main",
-        "dependencies": "./binder/requirements.txt",
+        "dependencies": "../binder/requirements.txt",
         "use_jupyter_lab": True,
     },
     # This cell is inserted at the top of every notebook produced by
