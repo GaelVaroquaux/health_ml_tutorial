@@ -1,0 +1,57 @@
+name: Link rendered docs in PR check
+
+on:
+  workflow_run:
+    workflows: ["Build and deploy documentation"]
+    types:
+      - completed
+
+# This workflow needs checks:write to create a check run on the PR's head SHA.
+# Using workflow_run ensures this permission is granted even for PRs from forks,
+# because this workflow always runs in the context of the base repository.
+permissions:
+  checks: write
+
+jobs:
+  create-docs-check:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request'
+    steps:
+      - name: Create check run pointing to the rendered docs artifact
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+
+            // Find the docs artifact uploaded by the build workflow.
+            const { data: { artifacts } } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: run.id,
+            });
+            const docsArtifact = artifacts.find(a => a.name.startsWith('docs-html-pr-'));
+
+            const artifactUrl = docsArtifact
+              ? `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${run.id}/artifacts/${docsArtifact.id}`
+              : null;
+
+            const buildSucceeded = run.conclusion === 'success';
+
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Check the rendered docs here!',
+              head_sha: run.head_sha,
+              status: 'completed',
+              conclusion: buildSucceeded && artifactUrl ? 'success' : 'failure',
+              details_url: artifactUrl
+                ?? `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${run.id}`,
+              output: {
+                title: artifactUrl
+                  ? 'Rendered docs are available'
+                  : 'Rendered docs artifact not found',
+                summary: artifactUrl
+                  ? `Gallery examples were executed and the rendered HTML was uploaded as an artifact.\n\n[Download rendered docs](${artifactUrl})`
+                  : 'The docs build did not produce an artifact. Check the [workflow run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${run.id}) for details.',
+              },
+            });
