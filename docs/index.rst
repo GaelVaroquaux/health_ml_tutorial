@@ -10,8 +10,8 @@ entirely in your browser.
 
 
 .. include:: auto_examples/index.rst
-    :start-line: 2
-    :end-before: .. rst-class:: sphx-glr-signature
+    :start-after: .. raw:: html
+    :end-before: .. toctree::
 
 
 
@@ -23,4 +23,3 @@ entirely in your browser.
     To run the examples locally, install the dependencies::
 
         pip install -r requirements.txt
-
