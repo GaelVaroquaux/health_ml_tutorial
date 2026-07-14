@@ -8,5 +8,7 @@ jupyterlite-pyodide-kernel>=0.3
 # Example requirements (used in gallery scripts)
 numpy
 matplotlib
-scikit-learn
+# hazardous 0.1.0 uses the `force_all_finite` argument removed in scikit-learn 1.6
+scikit-learn<1.6
 pandas
+hazardous

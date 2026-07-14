@@ -44,6 +44,6 @@ sphinx_gallery_conf = {
     # This cell is inserted at the top of every notebook produced by
     # sphinx-gallery. It installs required packages in the Pyodide environment.
     "first_notebook_cell": (
-        "%pip install numpy matplotlib scikit-learn pandas"
+        "%pip install numpy matplotlib 'scikit-learn<1.6' pandas hazardous"
     ),
 }
