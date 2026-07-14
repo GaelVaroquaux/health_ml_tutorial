@@ -32,6 +32,16 @@ html_theme_options = {
     "github_url": "https://github.com/GaelVaroquaux/health_ml_tutorial",
     "use_edit_page_button": False,
     "show_toc_level": 2,
+    "secondary_sidebar_items": {
+        "**": [
+            "page-toc",
+            # Sphinx-Gallery sidebar components (download and launch buttons)
+            # https://sphinx-gallery.github.io/stable/advanced.html#using-sphinx-gallery-sidebar-components
+            "sg_download_links",
+            "sg_launcher_links",
+        ],
+        "auto_examples/index": [],
+    },
 }
 
 # -- Sphinx-Gallery configuration --------------------------------------------
@@ -46,6 +56,15 @@ sphinx_gallery_conf = {
     # jupyterlite-sphinx (via post_configure_jupyterlite_sphinx).
     "jupyterlite": {
         "notebook_modification_function": None,
+    },
+    # Binder configuration: adds a "launch on Binder" button to every example.
+    "binder": {
+        "org": "GaelVaroquaux",
+        "repo": "health_ml_tutorial",
+        "binderhub_url": "https://mybinder.org",
+        "branch": "main",
+        "dependencies": "./binder/requirements.txt",
+        "use_jupyter_lab": True,
     },
     # This cell is inserted at the top of every notebook produced by
     # sphinx-gallery. It installs required packages in the Pyodide environment.
