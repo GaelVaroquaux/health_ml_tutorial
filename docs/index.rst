@@ -10,7 +10,7 @@ entirely in your browser.
 
 
 .. include:: auto_examples/index.rst
-    :start-after: .. raw:: html
+    :start-after: XXX-CUT-HERE-XXX
     :end-before: .. toctree::
 
 
