@@ -1,0 +1,49 @@
+# Configuration file for the Sphinx documentation builder.
+#
+# For the full list of built-in configuration values, see the documentation:
+# https://www.sphinx-doc.org/en/master/usage/configuration.html
+
+# -- Project information -----------------------------------------------------
+project = "Health ML Tutorial"
+copyright = "2024, Gaël Varoquaux"
+author = "Gaël Varoquaux"
+release = "0.1"
+
+# -- General configuration ---------------------------------------------------
+# jupyterlite_sphinx must be listed before sphinx_gallery.gen_gallery so
+# that it can patch the gallery output with launch buttons.
+extensions = [
+    "jupyterlite_sphinx",
+    "sphinx_gallery.gen_gallery",
+]
+
+templates_path = ["_templates"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+
+# -- Options for HTML output -------------------------------------------------
+html_theme = "pydata_sphinx_theme"
+html_static_path = ["_static"]
+
+html_theme_options = {
+    "github_url": "https://github.com/GaelVaroquaux/health_ml_tutorial",
+    "use_edit_page_button": False,
+    "show_toc_level": 2,
+}
+
+# -- Sphinx-Gallery configuration --------------------------------------------
+# The first notebook cell is prepended to every converted notebook so that
+# the required packages are installed when running inside JupyterLite (Pyodide).
+sphinx_gallery_conf = {
+    "examples_dirs": "../examples",   # path to your example scripts
+    "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
+    # Enable the JupyterLite launch button on every gallery page.
+    # Setting "notebook_modification_function" to None uses the default behaviour.
+    "jupyterlite": {
+        "notebook_modification_function": None,
+    },
+    # This cell is inserted at the top of every notebook produced by
+    # sphinx-gallery. It installs required packages in the Pyodide environment.
+    "first_notebook_cell": (
+        "%pip install numpy matplotlib 'scikit-learn<1.6' pandas hazardous"
+    ),
+}

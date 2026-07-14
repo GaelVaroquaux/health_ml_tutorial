@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "health_ml_tutorial"
+version = "0.1.0"
+description = "Materials for a course in Health ML"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+    "matplotlib",
+    # hazardous 0.1.0 uses the `force_all_finite` argument removed in scikit-learn 1.6
+    "scikit-learn<1.6",
+    "pandas",
+    "hazardous",
+]
+
+[project.optional-dependencies]
+docs = [
+    "sphinx>=7",
+    "pydata-sphinx-theme>=0.15",
+    "sphinx-gallery>=0.15",
+    "jupyterlite-sphinx>=0.13",
+    "jupyterlite-pyodide-kernel>=0.3",
+]
