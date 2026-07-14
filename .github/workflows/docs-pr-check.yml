@@ -23,13 +23,16 @@ jobs:
           script: |
             const run = context.payload.workflow_run;
 
+            // Artifact name prefix as defined in deploy.yml (upload-artifact step).
+            const ARTIFACT_PREFIX = 'docs-html-pr-';
+
             // Find the docs artifact uploaded by the build workflow.
             const { data: { artifacts } } = await github.rest.actions.listWorkflowRunArtifacts({
               owner: context.repo.owner,
               repo: context.repo.repo,
               run_id: run.id,
             });
-            const docsArtifact = artifacts.find(a => a.name.startsWith('docs-html-pr-'));
+            const docsArtifact = artifacts.find(a => a.name.startsWith(ARTIFACT_PREFIX));
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${run.id}`;
             const artifactUrl = docsArtifact
               ? `${runUrl}/artifacts/${docsArtifact.id}`
