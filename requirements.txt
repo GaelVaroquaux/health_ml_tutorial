@@ -12,3 +12,4 @@ matplotlib
 scikit-learn<1.6
 pandas
 hazardous
+skrub
