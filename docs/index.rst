@@ -1,8 +1,8 @@
 .. Health ML Tutorial documentation master file.
 
-====================
-Health ML Tutorial
-====================
+==================================================================
+An introduction to Machine Learning for health and epidemiology
+==================================================================
 
 Materials to understand concepts important to Machine Learning in Health:
 practical Python examples with interactive Jupyter notebooks that run
