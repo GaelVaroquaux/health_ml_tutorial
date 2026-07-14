@@ -30,13 +30,15 @@ jobs:
               run_id: run.id,
             });
             const docsArtifact = artifacts.find(a => a.name.startsWith('docs-html-pr-'));
-            if (!docsArtifact) {
-              core.warning('No docs artifact found for this workflow run.');
-            }
-
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${run.id}`;
             const artifactUrl = docsArtifact
-              ? `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${run.id}/artifacts/${docsArtifact.id}`
+              ? `${runUrl}/artifacts/${docsArtifact.id}`
               : null;
+
+            if (!artifactUrl) {
+              // The check run is still created below, reporting neutral/failure as appropriate.
+              core.warning(`No docs artifact found; the check run will reflect the build outcome. See ${runUrl}`);
+            }
 
             const buildSucceeded = run.conclusion === 'success';
             // Distinguish between a failed build and a successful build with a missing artifact.
@@ -51,8 +53,7 @@ jobs:
               head_sha: run.head_sha,
               status: 'completed',
               conclusion,
-              details_url: artifactUrl
-                ?? `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${run.id}`,
+              details_url: artifactUrl ?? runUrl,
               output: {
                 title: artifactUrl
                   ? 'Rendered docs are available'
@@ -61,6 +62,6 @@ jobs:
                     : 'Docs build failed',
                 summary: artifactUrl
                   ? `The rendered documentation was built and uploaded as an artifact.\n\n[Download rendered docs](${artifactUrl})`
-                  : `The docs build did not produce an artifact. Check the [workflow run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${run.id}) for details.`,
+                  : `The docs build did not produce an artifact. Check the [workflow run](${runUrl}) for details.`,
               },
             });
