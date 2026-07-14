@@ -70,6 +70,14 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+# sphinx-gallery generated output
+docs/auto_examples/
+docs/sg_execution_times.rst
+# jupyterlite build artefacts
+docs/jupyterlite_sphinx_*
+docs/jupyterlite_contents/
+docs/.jupyterlite.doit.db
+docs/*.tgz
 
 # PyBuilder
 .pybuilder/

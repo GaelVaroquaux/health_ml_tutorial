@@ -1,0 +1,12 @@
+# Documentation build requirements
+sphinx>=7
+pydata-sphinx-theme>=0.15
+sphinx-gallery>=0.15
+jupyterlite-sphinx>=0.13
+jupyterlite-pyodide-kernel>=0.3
+
+# Example requirements (used in gallery scripts)
+numpy
+matplotlib
+scikit-learn
+pandas
