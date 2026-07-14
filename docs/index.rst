@@ -8,11 +8,10 @@ Materials to understand concepts important to Machine Learning in Health:
 practical Python examples with interactive Jupyter notebooks that run
 entirely in your browser.
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Gallery
 
-   auto_examples/index
+.. include:: auto_examples/index.rst
+    :start-line: 2
+    :end-before: .. rst-class:: sphx-glr-signature
 
 
 
