@@ -4,9 +4,9 @@
 Health ML Tutorial
 ====================
 
-Materials for a course in Health ML — practical Python examples with
-interactive Jupyter notebooks that run entirely in your browser via
-`JupyterLite <https://jupyterlite.readthedocs.io>`_.
+Materials to understand concepts important to Machine Learning in Health:
+practical Python examples with interactive Jupyter notebooks that run
+entirely in your browser.
 
 .. toctree::
    :maxdepth: 1
@@ -14,19 +14,14 @@ interactive Jupyter notebooks that run entirely in your browser via
 
    auto_examples/index
 
-Getting started
-===============
 
-Each example page has a **Launch** button at the top that opens the
-corresponding notebook in JupyterLite — no installation required. You
-can edit, run, and experiment with the code directly in your browser.
 
-To run the examples locally, install the dependencies::
+.. sidebar:: Running the examples
 
-    pip install -r requirements.txt
+    Each example page has a **Launch** button at the top that opens the
+    corresponding notebook in your browser with JupyterLite.
 
-then build the documentation::
+    To run the examples locally, install the dependencies::
 
-    cd docs && make html
+        pip install -r requirements.txt
 
-and open ``docs/_build/html/index.html`` in your browser.

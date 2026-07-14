@@ -5,7 +5,7 @@
 
 # -- Project information -----------------------------------------------------
 project = "Health ML Tutorial"
-copyright = "2024, Gaël Varoquaux"
+copyright = "2026, Gaël Varoquaux"
 author = "Gaël Varoquaux"
 release = "0.1"
 
