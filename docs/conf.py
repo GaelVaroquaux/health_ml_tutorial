@@ -38,6 +38,8 @@ html_sidebars = {
         # https://sphinx-gallery.github.io/stable/advanced.html#using-sphinx-gallery-sidebar-components
         "sg_download_links",
     ],
+    "auto_examples/index": [],
+    "index": [],
 }
 
 # -- Options for HTML output -------------------------------------------------
@@ -49,7 +51,6 @@ html_theme_options = {
     "github_url": "https://github.com/GaelVaroquaux/health_ml_tutorial",
     "use_edit_page_button": False,
     "show_toc_level": 2,
-        "auto_examples/index": [],
     "secondary_sidebar_items": {},
 }
 
