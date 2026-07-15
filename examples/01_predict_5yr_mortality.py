@@ -113,48 +113,11 @@ perm_nonlinear = permutation_importance(
 importances_nonlinear = pd.DataFrame({
     "feature": X_test.columns,
     "importance_mean": perm_nonlinear.importances_mean,
-    "importance_std": perm_nonlinear.importances_std,
 }).sort_values("importance_mean", ascending=False)
 
 print("Permutation importance (drop in prediction performance when a feature is shuffled):")
 print(importances_nonlinear.to_string(index=False))
 
-# %%
-# Partial dependence of age, by sex - non-linear model
-# ------------------------------------------------------
-#
-# We compute the partial dependence of age on the predicted probability
-# of death within 5 years, on the test set: once using the whole
-# population, and once restricted to males or to females. Individual
-# test-set predictions are overlaid as a scatter, colored and marked by
-# sex, to relate the average curves to the spread of individual
-# predictions.
-
-import matplotlib.pyplot as plt
-from sklearn.inspection import partial_dependence
-
-sex_styles = {"M": ("tab:blue", "o"), "F": ("tab:orange", "^")}
-
-fig, ax = plt.subplots(figsize=(7, 5))
-
-pd_population_nonlinear = partial_dependence(model_nonlinear, X_test, features=["age"], grid_resolution=30)
-ax.plot(pd_population_nonlinear["grid_values"][0], pd_population_nonlinear["average"][0],
-        color="black", linewidth=2, label="whole population")
-
-for sex_value, (color, marker) in sex_styles.items():
-    is_sex = X_test["sex"] == sex_value
-    pd_sex_nonlinear = partial_dependence(model_nonlinear, X_test[is_sex], features=["age"], grid_resolution=30)
-    ax.plot(pd_sex_nonlinear["grid_values"][0], pd_sex_nonlinear["average"][0],
-            color=color, linewidth=2, label=f"sex = {sex_value}")
-    ax.scatter(X_test.loc[is_sex, "age"], y_pred_proba_nonlinear[is_sex],
-               color=color, marker=marker, alpha=0.3, s=15)
-
-ax.set_xlabel("age")
-ax.set_ylabel("predicted probability of death within 5 years")
-ax.set_title("Partial dependence of age, by sex - non-linear model")
-ax.legend()
-fig.tight_layout()
-plt.show()
 
 # %%
 # The ordering of which variables are important for prediction are quite similar
@@ -162,53 +125,120 @@ plt.show()
 # Let's now understand the difference in the predictions
 
 # %%
-# Partial dependence of age, by sex - linear model
+# Partial dependence on age
 # ---------------------------------------------------
+#
+# Here we plot "partial dependencies", that show how the prediction of the model
+# for a given feature changes, on average, across the population.
 
-fig, ax = plt.subplots(figsize=(7, 5))
+# %%
+# For the linear model
+# ......................
 
+import matplotlib.pyplot as plt
+from sklearn.inspection import partial_dependence
+sex_colors = {"M": "tab:blue", "F": "tab:orange"}
+sex_markers = {"M": "o", "F": "^"}
+
+# Plot the partial dependence of age for the whole population
 pd_population_linear = partial_dependence(model_linear, X_test, features=["age"], grid_resolution=30)
-ax.plot(pd_population_linear["grid_values"][0], pd_population_linear["average"][0],
-        color="black", linewidth=2, label="whole population")
+plt.plot(pd_population_linear["grid_values"][0], pd_population_linear["average"][0],
+        color="black", linewidth=2, label="Model prediction, averaged over whole population")
 
-for sex_value, (color, marker) in sex_styles.items():
+# Now plot for each sex, and overlay the average observed mortality for the corresponding sex
+for sex_value in ["M", "F"]:
     is_sex = X_test["sex"] == sex_value
     pd_sex_linear = partial_dependence(model_linear, X_test[is_sex], features=["age"], grid_resolution=30)
-    ax.plot(pd_sex_linear["grid_values"][0], pd_sex_linear["average"][0],
-            color=color, linewidth=2, label=f"sex = {sex_value}")
-    ax.scatter(X_test.loc[is_sex, "age"], y_pred_proba_linear[is_sex],
-               color=color, marker=marker, alpha=0.3, s=15)
+    plt.plot(pd_sex_linear["grid_values"][0], pd_sex_linear["average"][0],
+            color=sex_colors[sex_value], linewidth=2,
+            label=f"Model prediction, averaged for sex = {sex_value}")
+    age_sex_mean = (
+        pd.DataFrame({"age": X_test.loc[is_sex, "age"], "y_test": y_test[is_sex]})
+        .groupby("age", as_index=False)["y_test"].mean()
+    )
+    plt.plot(age_sex_mean["age"], age_sex_mean["y_test"],
+            color=sex_colors[sex_value], linewidth=1, linestyle="--", marker=sex_markers[sex_value], markersize=4,
+            label=f"Average 5 year mortality, sex = {sex_value}")
 
-ax.set_xlabel("age")
-ax.set_ylabel("predicted probability of death within 5 years")
-ax.set_title("Partial dependence of age, by sex - linear model")
-ax.legend()
-fig.tight_layout()
-plt.show()
+
+plt.xlabel("age")
+plt.ylabel("predicted probability of death within 5 years")
+plt.title("Partial dependence of age, by sex - linear model")
+plt.legend()
+plt.tight_layout()
+
+# %%
+# For the non-linear model
+# .........................
+
+pd_population_nonlinear = partial_dependence(model_nonlinear, X_test, features=["age"], grid_resolution=30)
+
+plt.plot(pd_population_nonlinear["grid_values"][0], pd_population_nonlinear["average"][0],
+        color="black", linewidth=2, label="Model prediction, averaged over whole population")
+
+for sex_value in ["M", "F"]:
+    is_sex = X_test["sex"] == sex_value
+    pd_sex_nonlinear = partial_dependence(model_nonlinear, X_test[is_sex], features=["age"], grid_resolution=30)
+    plt.plot(pd_sex_nonlinear["grid_values"][0], pd_sex_nonlinear["average"][0],
+            color=sex_colors[sex_value], linewidth=2,
+            label=f"Model prediction, averaged for sex = {sex_value}")
+    age_sex_mean = (
+        pd.DataFrame({"age": X_test.loc[is_sex, "age"], "y_test": y_test[is_sex]})
+        .groupby("age", as_index=False)["y_test"].mean()
+    )
+    plt.plot(age_sex_mean["age"], age_sex_mean["y_test"],
+            color=sex_colors[sex_value], linewidth=1, linestyle="--", marker=sex_markers[sex_value], markersize=4,
+            label=f"Average 5 year mortality, sex = {sex_value}")
+
+plt.xlabel("age")
+plt.ylabel("predicted probability of death within 5 years")
+plt.title("Partial dependence of age, by sex - non-linear model")
+plt.legend()
+plt.tight_layout()
+
 
 # %%
 # Partial dependence of age, by race/ethnicity
 # -----------------------------------------------
 
-fig, ax = plt.subplots(figsize=(7, 5))
+race_markers = {
+    "Mexican American": "o",
+    "Other Hispanic": "^",
+    "Non-Hispanic White": "s",
+    "Non-Hispanic Black": "D",
+    "Other Race - Including Multi-Racial": "P",
+}
 
-ax.plot(pd_population_nonlinear["grid_values"][0], pd_population_nonlinear["average"][0],
-        color="black", linewidth=2, label="whole population")
+plt.figure(figsize=(7, 5))
+
+plt.plot(pd_population_nonlinear["grid_values"][0], pd_population_nonlinear["average"][0],
+         color="black", linewidth=2, label="Model prediction, averaged over whole population")
 
 for race_value in sorted(X_test["race_eth"].unique()):
     is_race = X_test["race_eth"] == race_value
     pd_race = partial_dependence(model_nonlinear, X_test[is_race], features=["age"], grid_resolution=30)
-    line, = ax.plot(pd_race["grid_values"][0], pd_race["average"][0],
-                     linewidth=2, label=race_value)
-    ax.scatter(X_test.loc[is_race, "age"], y_pred_proba_nonlinear[is_race],
-               color=line.get_color(), marker="o", alpha=0.3, s=15)
+    line, = plt.plot(pd_race["grid_values"][0], pd_race["average"][0],
+                     linewidth=2, label=f"Model prediction, averaged for race/ethnicity = {race_value}")
+    age_race_mean = (
+        pd.DataFrame({"age": X_test.loc[is_race, "age"], "y_test": y_test[is_race]})
+        .groupby("age", as_index=False)["y_test"].mean()
+    )
+    plt.plot(
+        age_race_mean["age"],
+        age_race_mean["y_test"],
+        color=line.get_color(),
+        linewidth=1,
+        linestyle="--",
+        marker=race_markers.get(race_value, "o"),
+        markersize=4,
+        label=f"Average 5 year mortality, race/ethnicity = {race_value}",
+    )
 
-ax.set_xlabel("age")
-ax.set_ylabel("predicted probability of death within 5 years")
-ax.set_title("Partial dependence of age, by race/ethnicity")
-ax.legend(fontsize=8)
-fig.tight_layout()
-plt.show()
+plt.xlabel("age")
+plt.ylabel("predicted probability of death within 5 years")
+plt.title("Partial dependence of age, by race/ethnicity")
+plt.legend(fontsize=8)
+plt.tight_layout()
 
 # %%
 # Partial dependence of age, by education
@@ -224,34 +254,55 @@ education_labels = {
     4.0: "some college / AA degree",
     5.0: "college graduate or above",
 }
+education_markers = {
+    1.0: "o",
+    2.0: "^",
+    3.0: "s",
+    4.0: "D",
+    5.0: "P",
+}
 
-fig, ax = plt.subplots(figsize=(7, 5))
+plt.figure(figsize=(7, 5))
 
-ax.plot(pd_population_nonlinear["grid_values"][0], pd_population_nonlinear["average"][0],
-        color="black", linewidth=2, label="whole population")
+plt.plot(pd_population_nonlinear["grid_values"][0], pd_population_nonlinear["average"][0],
+         color="black", linewidth=2, label="Model prediction, averaged over whole population")
 
 for education_value, education_label in education_labels.items():
     is_education = X_test["education"] == education_value
     pd_education = partial_dependence(model_nonlinear, X_test[is_education], features=["age"], grid_resolution=30)
-    line, = ax.plot(pd_education["grid_values"][0], pd_education["average"][0],
-                     linewidth=2, label=education_label)
-    ax.scatter(X_test.loc[is_education, "age"], y_pred_proba_nonlinear[is_education],
-               color=line.get_color(), marker="o", alpha=0.3, s=15)
+    line, = plt.plot(
+        pd_education["grid_values"][0],
+        pd_education["average"][0],
+        linewidth=2,
+        label=f"Model prediction, averaged for education = {education_label}",
+    )
+    age_education_mean = (
+        pd.DataFrame({"age": X_test.loc[is_education, "age"], "y_test": y_test[is_education]})
+        .groupby("age", as_index=False)["y_test"].mean()
+    )
+    plt.plot(
+        age_education_mean["age"],
+        age_education_mean["y_test"],
+        color=line.get_color(),
+        linewidth=1,
+        linestyle="--",
+        marker=education_markers[education_value],
+        markersize=4,
+        label=f"Average 5 year mortality, education = {education_label}",
+    )
 
-ax.set_xlabel("age")
-ax.set_ylabel("predicted probability of death within 5 years")
-ax.set_title("Partial dependence of age, by education")
-ax.legend(fontsize=8)
-fig.tight_layout()
-plt.show()
+plt.xlabel("age")
+plt.ylabel("predicted probability of death within 5 years")
+plt.title("Partial dependence of age, by education")
+plt.legend(fontsize=8)
+plt.tight_layout()
 
 # %%
 # 2D partial dependence: age and waist circumference
 # ------------------------------------------------------
 #
-# Rows with a missing waist circumference are dropped: with them
-# included, the 5th-95th percentile grid used for the plot's axis
-# becomes undefined.
+# We drop rows with a missing waist circumference are dropped, to ease plotting,
+# though the model handes missing values
 
 X_test_complete = X_test.dropna(subset=["age", "waist_cm"])
 pd_age_waist = partial_dependence(
@@ -266,25 +317,4 @@ ax.set_xlabel("age")
 ax.set_ylabel("waist circumference (cm)")
 ax.set_title("Partial dependence of age and waist circumference")
 fig.tight_layout()
-plt.show()
 
-# %%
-# 2D partial dependence: age and BMI
-# ---------------------------------------
-
-X_test_complete = X_test.dropna(subset=["age", "bmi"])
-pd_age_bmi = partial_dependence(
-    model_nonlinear, X_test_complete, features=["age", "bmi"], grid_resolution=30
-)
-age_grid, bmi_grid = pd_age_bmi["grid_values"]
-
-fig, ax = plt.subplots(figsize=(7, 5))
-cs = ax.contourf(age_grid, bmi_grid, pd_age_bmi["average"][0].T, levels=20, cmap="viridis")
-fig.colorbar(cs, ax=ax, label="predicted probability of death within 5 years")
-ax.set_xlabel("age")
-ax.set_ylabel("BMI")
-ax.set_title("Partial dependence of age and BMI")
-fig.tight_layout()
-plt.show()
-
-# %%
