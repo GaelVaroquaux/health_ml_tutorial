@@ -1,3 +1,6 @@
+"""
+Small internal module used for functions injected in the gallery execution.
+"""
 import os
 
 import matplotlib as mpl
