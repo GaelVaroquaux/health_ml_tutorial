@@ -1,6 +1,6 @@
 numpy
 matplotlib
-scikit-learn<1.6
+scikit-learn
 pandas
 hazardous
 skrub
