@@ -26,8 +26,9 @@ from skrub import TableReport
 TableReport(df)
 
 # %%
-# We will predict sepsis from a small number of covariates:
-X = df[["age", "sex", "hours_before_icu", "diastolic_bp_mmhg"]]
+# This is already a small, curated set of covariates - age, sex, the
+# delay before ICU admission, and diastolic blood pressure:
+X = df.drop(columns=["sepsis"])
 y = df["sepsis"]
 
 print("Covariates used:", X.columns.tolist())
@@ -152,25 +153,20 @@ X_test_delay = X_test.dropna(subset=["hours_before_icu"])
 y_test_delay = y_test.loc[X_test_delay.index]
 
 # %%
-# We will plot local averages of the observed sepsis rate, to compare with the 
-# model's predictions. For this, we need to group patients by delay into 
-# 8 bins of equal size before averaging observed sepsis.
+# We will plot local averages of the observed sepsis rate, to compare with the
+# model's predictions. For this, we need to group patients by delay into
+# 16 bins of equal size before averaging observed sepsis.
 
 observed_delay = X_test_delay[["sex", "hours_before_icu"]].copy()
 observed_delay["sepsis"] = y_test_delay
-observed_delay["delay_bin"] = pd.qcut(observed_delay["hours_before_icu"], q=8)
+observed_delay["delay_bin"] = pd.qcut(observed_delay["hours_before_icu"], q=16)
 
-# %%
-# Some plotting setup: colors and markers
-import matplotlib.pyplot as plt
-
-sex_colors = {"M": "tab:blue", "F": "tab:orange"}
-sex_markers = {"M": "o", "F": "^"}
 
 # %%
 # For the linear model
 # ......................
 
+import matplotlib.pyplot as plt
 from sklearn.inspection import partial_dependence
 pd_population_linear_delay = partial_dependence(
     model_linear, X_test_delay, features=["hours_before_icu"], grid_resolution=30
@@ -185,42 +181,28 @@ plt.plot(
     label="Model prediction, averaged over whole population",
 )
 
-for sex_value in ["M", "F"]:
-    is_sex = X_test_delay["sex"] == sex_value
-    pd_sex_linear_delay = partial_dependence(
-        model_linear, X_test_delay[is_sex], features=["hours_before_icu"], grid_resolution=30
-    )
-    plt.plot(
-        pd_sex_linear_delay["grid_values"][0],
-        pd_sex_linear_delay["average"][0],
-        color=sex_colors[sex_value],
-        linewidth=2,
-        label=f"Model prediction, averaged for sex = {sex_value}",
-    )
-
-    observed_sex = observed_delay[observed_delay["sex"] == sex_value]
-    observed_by_bin = observed_sex.groupby("delay_bin")[["hours_before_icu", "sepsis"]].mean()
-    plt.plot(
-        observed_by_bin["hours_before_icu"],
-        observed_by_bin["sepsis"],
-        color=sex_colors[sex_value],
-        linewidth=1,
-        linestyle="--",
-        marker=sex_markers[sex_value],
-        markersize=4,
-        label=f"Average sepsis rate, sex = {sex_value}",
-    )
+observed_by_bin = observed_delay.groupby("delay_bin")[["hours_before_icu", "sepsis"]].mean()
+plt.plot(
+    observed_by_bin["hours_before_icu"],
+    observed_by_bin["sepsis"],
+    color='blue',
+    linewidth=1,
+    linestyle="--",
+    marker='o',
+    markersize=4,
+    label="Average sepsis rate",
+)
 
 plt.xlabel("hours between hospital and ICU admission")
 plt.ylabel("predicted probability of sepsis")
-plt.title("Partial dependence of admission delay, by sex - linear model")
+plt.title("Dependency on admission delay - linear model")
 plt.legend(fontsize=8)
 plt.tight_layout()
 
 # %%
 # The non-linear model instead traces a bumpy, non-monotonic curve. It is likely
 # that these bumps reflect noise in addition to real link between admission delay
-# and sepsis, but this model predicts better the observed sepsis rate than the 
+# and sepsis, but this model predicts better the observed sepsis rate than the
 # linear model: the actual dynamics are likely not monotonic.
 
 
@@ -241,34 +223,21 @@ plt.plot(
     label="Model prediction, averaged over whole population",
 )
 
-for sex_value in ["M", "F"]:
-    is_sex = X_test_delay["sex"] == sex_value
-    pd_sex_nonlinear_delay = partial_dependence(
-        model_nonlinear, X_test_delay[is_sex], features=["hours_before_icu"], grid_resolution=30
-    )
-    plt.plot(
-        pd_sex_nonlinear_delay["grid_values"][0],
-        pd_sex_nonlinear_delay["average"][0],
-        color=sex_colors[sex_value],
-        linewidth=2,
-        label=f"Model prediction, averaged for sex = {sex_value}",
-    )
+observed_by_bin = observed_delay.groupby("delay_bin")[["hours_before_icu", "sepsis"]].mean()
+plt.plot(
+    observed_by_bin["hours_before_icu"],
+    observed_by_bin["sepsis"],
+    color='blue',
+    linewidth=1,
+    linestyle="--",
+    marker='o',
+    markersize=4,
+    label="Average sepsis rate",
+)
 
-    observed_sex = observed_delay[observed_delay["sex"] == sex_value]
-    observed_by_bin = observed_sex.groupby("delay_bin")[["hours_before_icu", "sepsis"]].mean()
-    plt.plot(
-        observed_by_bin["hours_before_icu"],
-        observed_by_bin["sepsis"],
-        color=sex_colors[sex_value],
-        linewidth=1,
-        linestyle="--",
-        marker=sex_markers[sex_value],
-        markersize=4,
-        label=f"Average sepsis rate, sex = {sex_value}",
-    )
 
 plt.xlabel("hours between hospital and ICU admission")
 plt.ylabel("predicted probability of sepsis")
-plt.title("Partial dependence of admission delay, by sex - non-linear model")
+plt.title("Dependency on admission delay - non linear model")
 plt.legend(fontsize=8)
 plt.tight_layout()

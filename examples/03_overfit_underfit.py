@@ -18,7 +18,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 df = pd.read_csv("physionet_sepsis.csv")
-X = df[["age", "sex", "hours_before_icu", "diastolic_bp_mmhg"]]
+X = df.drop(columns=["sepsis"])
 y = df["sepsis"]
 
 X_train, X_test, y_train, y_test = train_test_split(

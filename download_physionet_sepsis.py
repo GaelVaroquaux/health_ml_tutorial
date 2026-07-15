@@ -44,11 +44,19 @@ Output columns:
     sepsis                   - 1 if the patient is later flagged septic,
                                0 otherwise
 
+This saves two CSVs:
+    - physionet_sepsis_full.csv, with every column above, saved next to
+      this script (the project root). This is the reference dataset,
+      kept out of examples/ so it does not get shipped to JupyterLite.
+    - examples/physionet_sepsis.csv, a lighter version with only the
+      columns the example scripts actually use (age, sex,
+      hours_before_icu, diastolic_bp_mmhg, sepsis). This is the one
+      that gets shipped alongside the notebooks.
+
 Requires: pandas, requests
     pip install pandas requests
 
-Run from the health_ml_tutorial directory; the output CSV is saved to
-examples/, where the gallery examples read it from:
+Run from the health_ml_tutorial directory:
     python download_physionet_sepsis.py
 """
 
@@ -100,6 +108,9 @@ MEAN_COLUMNS = [
     "Glucose", "Potassium", "Hct", "WBC", "Creatinine", "BUN",
     "Platelets", "Lactate", "Hgb",
 ]
+
+# The columns actually used by the example scripts in examples/
+LIGHT_COLUMNS = ["age", "sex", "hours_before_icu", "diastolic_bp_mmhg", "sepsis"]
 
 
 def list_patient_files(training_set):
@@ -162,7 +173,13 @@ if __name__ == "__main__":
     print("\nSepsis distribution:")
     print(df["sepsis"].value_counts())
 
-    examples_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "examples")
-    out_path = os.path.join(examples_dir, "physionet_sepsis.csv")
-    df.to_csv(out_path, index=False)
-    print(f"\nSaved to {out_path}")
+    project_root = os.path.dirname(os.path.abspath(__file__))
+    examples_dir = os.path.join(project_root, "examples")
+
+    full_out_path = os.path.join(project_root, "physionet_sepsis_full.csv")
+    df.to_csv(full_out_path, index=False)
+    print(f"\nSaved full dataset to {full_out_path}")
+
+    light_out_path = os.path.join(examples_dir, "physionet_sepsis.csv")
+    df[LIGHT_COLUMNS].to_csv(light_out_path, index=False)
+    print(f"Saved light dataset (used by the examples) to {light_out_path}")
