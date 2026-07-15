@@ -1,0 +1,40 @@
+### Matplotlib configuration for the Health ML Tutorial
+#
+# These settings apply poster-style cosmetics (bigger fonts, thicker lines)
+# for better readability in slides and on-screen viewing, while keeping
+# figures slightly smaller than the matplotlib default.
+#
+# This file is read automatically by matplotlib when the current working
+# directory is the examples/ folder (local script execution).  It is also
+# copied into the JupyterLite virtual filesystem by docs/conf.py so that
+# the same settings apply when running notebooks in the browser.
+# sphinx-gallery re-applies the equivalent settings via plot_rcparams in
+# docs/conf.py so that every generated gallery figure uses them too.
+
+### Figure layout
+figure.figsize : 5.5, 4.0
+figure.dpi     : 100
+
+### Font sizes  (seaborn poster-context style: roughly 1.4× the defaults)
+font.size        : 14
+axes.titlesize   : 16
+axes.labelsize   : 14
+xtick.labelsize  : 12
+ytick.labelsize  : 12
+legend.fontsize  : 12
+
+### Line / patch widths
+lines.linewidth    : 2.5
+lines.markersize   : 8
+axes.linewidth     : 1.5
+patch.linewidth    : 1.0
+
+### Tick widths and sizes
+xtick.major.width : 1.5
+ytick.major.width : 1.5
+xtick.minor.width : 1.0
+ytick.minor.width : 1.0
+xtick.major.size  : 6
+ytick.major.size  : 6
+xtick.minor.size  : 3
+ytick.minor.size  : 3

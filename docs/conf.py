@@ -6,6 +6,13 @@
 import glob
 import os
 import shutil
+import sys
+
+import matplotlib as _mpl
+
+# Ensure helper modules next to conf.py are importable by string FQNs in
+# sphinx_gallery_conf (e.g., reset_modules hooks).
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 # -- Project information -----------------------------------------------------
 project = "Health ML Tutorial"
@@ -61,6 +68,11 @@ html_theme_options = {
 }
 
 # -- Sphinx-Gallery configuration --------------------------------------------
+# Parse examples/matplotlibrc once to use as the single source of truth for
+# poster-style figure cosmetics across all execution environments.
+_rc_file = os.path.join(os.path.dirname(__file__), "..", "examples", "matplotlibrc")
+_poster_rcparams = dict(_mpl.rc_params_from_file(_rc_file, use_default_template=False))
+
 # The first notebook cell is prepended to every converted notebook so that
 # the required packages are installed when running inside JupyterLite (Pyodide).
 sphinx_gallery_conf = {
@@ -92,10 +104,21 @@ sphinx_gallery_conf = {
         "use_jupyter_lab": True,
     },
     # This cell is inserted at the top of every notebook produced by
-    # sphinx-gallery. It installs required packages in the Pyodide environment.
-    "first_notebook_cell": (
-        "%pip install numpy matplotlib 'scikit-learn<1.6' pandas hazardous skrub"
-    ),
+    # sphinx-gallery. It installs required packages in the Pyodide environment
+    # and applies the same poster-style matplotlib settings as matplotlibrc so
+    # that the figures look consistent when run in JupyterLite or Binder.
+    "first_notebook_cell": "\n".join([
+        "%pip install numpy matplotlib 'scikit-learn<1.6' pandas hazardous skrub",
+        "import matplotlib",
+        f"matplotlib.rcParams.update({_poster_rcparams!r})",
+    ]),
+    # Poster-style rcParams re-applied before every gallery example during the
+    # sphinx-gallery build (mirrors the settings in examples/matplotlibrc).
+    # sphinx-gallery calls each callable in reset_modules as
+    # func(gallery_conf, fname) before (and/or after) each example runs.
+    # Use a fully-qualified string for the custom reset hook so
+    # sphinx_gallery_conf stays cacheable under Sphinx strict warning mode.
+    "reset_modules": ("matplotlib", "gallery_hooks.apply_poster_rcparams"),
 }
 
 # -- Data files for JupyterLite ------------------------------------------------
@@ -122,5 +145,10 @@ _jupyterlite_data_dir = os.path.join(os.path.dirname(__file__), "jupyterlite_dat
 os.makedirs(_jupyterlite_data_dir, exist_ok=True)
 for _csv_path in glob.glob(os.path.join(os.path.dirname(__file__), "..", "examples", "*.csv")):
     shutil.copy(_csv_path, _jupyterlite_data_dir)
+# Copy the matplotlibrc into the JupyterLite virtual filesystem so that
+# matplotlib picks it up from the working directory when notebooks run in
+# the browser (Pyodide checks the cwd for matplotlibrc at import time).
+_matplotlibrc_src = os.path.join(os.path.dirname(__file__), "..", "examples", "matplotlibrc")
+shutil.copy(_matplotlibrc_src, _jupyterlite_data_dir)
 
 jupyterlite_contents = ["jupyterlite_data"]
