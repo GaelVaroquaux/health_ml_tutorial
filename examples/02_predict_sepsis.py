@@ -134,12 +134,11 @@ print("Permutation importance (drop in prediction performance when a feature is 
 print(importances_nonlinear.to_string(index=False))
 
 # %%
-# Diastolic blood pressure and the delay before ICU admission stand out
-# for the non-linear model. Let's now understand the difference in the
-# predictions, focusing on diastolic blood pressure.
+# Delay before ICU admission stands out as an important predictor of sepsis.
+# Let's now understand how it relates to the risk of sepsis.
 
 # %%
-# Partial dependence on diastolic blood pressure
+# Partial dependence on delay before ICU admission
 # ---------------------------------------------------
 #
 # Here we plot "partial dependencies", that show how the prediction of
@@ -149,17 +148,17 @@ print(importances_nonlinear.to_string(index=False))
 # first drop them: the model can handle missing values internally, but
 # the plotting code below cannot.
 
-X_test_complete = X_test.dropna(subset=["diastolic_bp_mmhg"])
-y_test_complete = y_test.loc[X_test_complete.index]
+X_test_delay = X_test.dropna(subset=["hours_before_icu"])
+y_test_delay = y_test.loc[X_test_delay.index]
 
 # %%
-# We will plot local averages of the observed sepsis rate, to compare with the model's
-# predictions. For this, we need to group patients by diastolic blood pressure into
+# We will plot local averages of the observed sepsis rate, to compare with the 
+# model's predictions. For this, we need to group patients by delay into 
 # 8 bins of equal size before averaging observed sepsis.
 
-observed = X_test_complete[["sex", "diastolic_bp_mmhg"]].copy()
-observed["sepsis"] = y_test_complete
-observed["dbp_bin"] = pd.qcut(observed["diastolic_bp_mmhg"], q=8)
+observed_delay = X_test_delay[["sex", "hours_before_icu"]].copy()
+observed_delay["sepsis"] = y_test_delay
+observed_delay["delay_bin"] = pd.qcut(observed_delay["hours_before_icu"], q=8)
 
 # %%
 # Some plotting setup: colors and markers
@@ -173,96 +172,6 @@ sex_markers = {"M": "o", "F": "^"}
 # ......................
 
 from sklearn.inspection import partial_dependence
-pd_population_linear = partial_dependence(
-    model_linear, X_test_complete, features=["diastolic_bp_mmhg"], grid_resolution=30
-)
-plt.plot(pd_population_linear["grid_values"][0], pd_population_linear["average"][0],
-         color="black", linewidth=2, label="Model prediction, averaged over whole population")
-
-for sex_value in ["M", "F"]:
-    is_sex = X_test_complete["sex"] == sex_value
-    pd_sex_linear = partial_dependence(
-        model_linear, X_test_complete[is_sex], features=["diastolic_bp_mmhg"], grid_resolution=30
-    )
-    plt.plot(pd_sex_linear["grid_values"][0], pd_sex_linear["average"][0],
-             color=sex_colors[sex_value], linewidth=2,
-             label=f"Model prediction, averaged for sex = {sex_value}")
-
-    observed_sex = observed[observed["sex"] == sex_value]
-    observed_by_bin = observed_sex.groupby("dbp_bin")[["diastolic_bp_mmhg", "sepsis"]].mean()
-    plt.plot(observed_by_bin["diastolic_bp_mmhg"], observed_by_bin["sepsis"],
-             color=sex_colors[sex_value], linewidth=1, linestyle="--",
-             marker=sex_markers[sex_value], markersize=4,
-             label=f"Average sepsis rate, sex = {sex_value}")
-
-plt.xlabel("diastolic blood pressure (mmHg)")
-plt.ylabel("predicted probability of sepsis")
-plt.title("Partial dependence of diastolic BP, by sex - linear model")
-plt.legend(fontsize=8)
-plt.tight_layout()
-
-# %%
-# The linear model decreases monotonically as diastolic blood pressure rises.
-# This only captures part of the picture: low blood pressure (a sign of poor
-# perfusion / possible septic shock) drives risk up sharply, but risk does 
-# not keep decreasing forever as pressure rises further.
-
-# %%
-# For the non-linear model
-# .........................
-
-pd_population_nonlinear = partial_dependence(
-    model_nonlinear, X_test_complete, features=["diastolic_bp_mmhg"], grid_resolution=30
-)
-
-plt.figure()
-plt.plot(pd_population_nonlinear["grid_values"][0], pd_population_nonlinear["average"][0],
-         color="black", linewidth=2, label="Model prediction, averaged over whole population")
-
-for sex_value in ["M", "F"]:
-    is_sex = X_test_complete["sex"] == sex_value
-    pd_sex_nonlinear = partial_dependence(
-        model_nonlinear, X_test_complete[is_sex], features=["diastolic_bp_mmhg"], grid_resolution=30
-    )
-    plt.plot(pd_sex_nonlinear["grid_values"][0], pd_sex_nonlinear["average"][0],
-             color=sex_colors[sex_value], linewidth=2,
-             label=f"Model prediction, averaged for sex = {sex_value}")
-
-    observed_sex = observed[observed["sex"] == sex_value]
-    observed_by_bin = observed_sex.groupby("dbp_bin")[["diastolic_bp_mmhg", "sepsis"]].mean()
-    plt.plot(observed_by_bin["diastolic_bp_mmhg"], observed_by_bin["sepsis"],
-             color=sex_colors[sex_value], linewidth=1, linestyle="--",
-             marker=sex_markers[sex_value], markersize=4,
-             label=f"Average sepsis rate, sex = {sex_value}")
-
-plt.xlabel("diastolic blood pressure (mmHg)")
-plt.ylabel("predicted probability of sepsis")
-plt.title("Partial dependence of diastolic BP, by sex - non-linear model")
-plt.legend(fontsize=8)
-plt.tight_layout()
-
-# %%
-# The non-linear model instead traces a bumpy, non-monotonic curve. It is likely
-# that these bumps reflect noise in addition to real physiology, but this model
-# predicts better the observed sepsis rate than the linear model, and must thus
-# be capturing some useful signal.
-
-
-# %%
-# Partial dependence on delay before ICU admission
-# -------------------------------------------------
-
-X_test_delay = X_test.dropna(subset=["hours_before_icu"])
-y_test_delay = y_test.loc[X_test_delay.index]
-
-observed_delay = X_test_delay[["sex", "hours_before_icu"]].copy()
-observed_delay["sepsis"] = y_test_delay
-observed_delay["delay_bin"] = pd.qcut(observed_delay["hours_before_icu"], q=8)
-
-# %%
-# For the linear model
-# ......................
-
 pd_population_linear_delay = partial_dependence(
     model_linear, X_test_delay, features=["hours_before_icu"], grid_resolution=30
 )
@@ -307,6 +216,13 @@ plt.ylabel("predicted probability of sepsis")
 plt.title("Partial dependence of admission delay, by sex - linear model")
 plt.legend(fontsize=8)
 plt.tight_layout()
+
+# %%
+# The non-linear model instead traces a bumpy, non-monotonic curve. It is likely
+# that these bumps reflect noise in addition to real link between admission delay
+# and sepsis, but this model predicts better the observed sepsis rate than the 
+# linear model: the actual dynamics are likely not monotonic.
+
 
 # %%
 # For the non-linear model
@@ -356,23 +272,3 @@ plt.ylabel("predicted probability of sepsis")
 plt.title("Partial dependence of admission delay, by sex - non-linear model")
 plt.legend(fontsize=8)
 plt.tight_layout()
-
-
-
-# %%
-# 2D partial dependence: delay before ICU admission and diastolic BP
-# ------------------------------------------------------------------------
-
-pd_2d = partial_dependence(
-    model_nonlinear, X_test_complete, features=["hours_before_icu", "diastolic_bp_mmhg"],
-    grid_resolution=30,
-)
-hours_grid, dbp_grid = pd_2d["grid_values"]
-
-fig, ax = plt.subplots(figsize=(7, 5))
-cs = ax.contourf(hours_grid, dbp_grid, pd_2d["average"][0].T, levels=20, cmap="viridis")
-fig.colorbar(cs, ax=ax, label="predicted probability of sepsis")
-ax.set_xlabel("hours between hospital and ICU admission")
-ax.set_ylabel("diastolic blood pressure (mmHg)")
-ax.set_title("Partial dependence of admission delay and diastolic BP")
-fig.tight_layout()
