@@ -68,6 +68,11 @@ html_theme_options = {
 _rc_file = os.path.join(os.path.dirname(__file__), "..", "examples", "matplotlibrc")
 _poster_rcparams = dict(_mpl.rc_params_from_file(_rc_file, use_default_template=False))
 
+
+def _apply_poster_rcparams(gallery_conf, fname):
+    """Apply poster-style rcParams before each gallery example."""
+    _mpl.rcParams.update(_poster_rcparams)
+
 # The first notebook cell is prepended to every converted notebook so that
 # the required packages are installed when running inside JupyterLite (Pyodide).
 sphinx_gallery_conf = {
@@ -107,9 +112,11 @@ sphinx_gallery_conf = {
         "import matplotlib",
         f"matplotlib.rcParams.update({_poster_rcparams!r})",
     ]),
-    # Poster-style rcParams applied to every gallery figure during the
+    # Poster-style rcParams re-applied before every gallery example during the
     # sphinx-gallery build (mirrors the settings in examples/matplotlibrc).
-    "plot_rcparams": _poster_rcparams,
+    # sphinx-gallery calls each callable in reset_modules as
+    # func(gallery_conf, fname) before (and/or after) each example runs.
+    "reset_modules": ("matplotlib", _apply_poster_rcparams),
 }
 
 # -- Data files for JupyterLite ------------------------------------------------
