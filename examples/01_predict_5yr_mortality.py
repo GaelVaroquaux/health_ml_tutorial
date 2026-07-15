@@ -2,21 +2,16 @@
 Predicting 5-year mortality
 ============================
 
-We predict 5-year mortality from the NHANES covariates using skrub's
-``tabular_pipeline``, report the AUC on held-out data, rank features by
-permutation importance, and look at partial dependence plots to
-understand how the model uses age, alone and in combination with other
-covariates.
+We predict 5-year mortality from the NHANES covariates, inspect features
+importance, and look at partial dependence plots to understand how the model
+uses covariates to predict.
 """
 
 # %%
-# Load the fixed 5-year-horizon dataset
+# Load NHANES 5-year-outcome dataset
 # --------------------------------------
 #
-# This dataset was built by ``download_nhanes.py``, which already drops
-# "participant_id" (just an identifier), "event" (the raw vital status
-# "death_within_5y" was derived from, so keeping it would leak the
-# target), and "cycle".
+# This dataset was built from the NHANES study:
 
 import pandas as pd
 
@@ -29,10 +24,15 @@ print("Covariates used:", X.columns.tolist())
 print("\n5-year mortality rate:", y.mean())
 
 # %%
+# Model fitting and prediction
+# ==================================
+#
 # Train / test split
 # -------------------
 #
-# The split is stratified since the outcome is rare (~7%).
+# Before fitting models, we split train and test data, in order to have
+# untouched hold-out data ("test") to evaluate the model.
+# We stratify the split, the outcome is rare (~7%).
 
 from sklearn.model_selection import train_test_split
 
@@ -44,15 +44,22 @@ X_train, X_test, y_train, y_test = train_test_split(
 # Fit a linear model: logistic regression
 # ------------------------------------------
 #
-# ``tabular_pipeline`` also accepts a plain scikit-learn estimator: it
-# then chains a ``TableVectorizer`` (plus imputation and scaling, since
-# logistic regression needs both) with that estimator.
+# We use a LogisticRegression from scikit-learn, but wrap it in a
+# ``tabular_pipeline`` from skrub that does some data preparation.
 
 from sklearn.linear_model import LogisticRegression
 from skrub import tabular_pipeline
 
 model_linear = tabular_pipeline(LogisticRegression())
 model_linear.fit(X_train, y_train)
+
+# %%
+# Evaluate the model on held-out data
+from sklearn.metrics import roc_auc_score
+
+y_pred_proba_linear = model_linear.predict_proba(X_test)[:, 1]
+auc_linear = roc_auc_score(y_test, y_pred_proba_linear)
+print(f"Held-out AUC, linear model (logistic regression): {auc_linear:.3f}")
 
 # %%
 # Fit a non-linear model: gradient boosting
@@ -65,41 +72,52 @@ model_nonlinear = tabular_pipeline("classifier")
 model_nonlinear.fit(X_train, y_train)
 
 # %%
-# Compare the two models on held-out data
-# ------------------------------------------
-
-from sklearn.metrics import roc_auc_score
-
-y_pred_proba_linear = model_linear.predict_proba(X_test)[:, 1]
+# Once again, evaluate it on left-out data
 y_pred_proba_nonlinear = model_nonlinear.predict_proba(X_test)[:, 1]
-
-auc_linear = roc_auc_score(y_test, y_pred_proba_linear)
 auc_nonlinear = roc_auc_score(y_test, y_pred_proba_nonlinear)
-
-print(f"Held-out AUC, linear model (logistic regression): {auc_linear:.3f}")
 print(f"Held-out AUC, non-linear model (gradient boosting): {auc_nonlinear:.3f}")
 
 # %%
-# Permutation importance on the held-out data
-# ----------------------------------------------
+# The non-linear model predicts slightly better than the linear one.
+# Let's now see what drives this prediction.
 #
-# Computed for the non-linear model, which is used for the rest of the
-# partial dependence plots below.
-
+# Model inspection: how do the models predict
+# =============================================
+#
+# Permutation importance: finding the important variables
+# ---------------------------------------------------------
+#
+# We use permutation importance to see which variables drive the prediction
 from sklearn.inspection import permutation_importance
 
-perm_result = permutation_importance(
+perm_linear = permutation_importance(
+    model_linear, X_test, y_test, scoring="roc_auc", n_repeats=10, random_state=0
+)
+
+importances_linear = pd.DataFrame({
+    "feature": X_test.columns,
+    "importance_mean": perm_linear.importances_mean,
+    "importance_std": perm_linear.importances_std,
+}).sort_values("importance_mean", ascending=False)
+
+print("Permutation importance (drop in prediction performance when a feature is shuffled):")
+print(importances_linear.to_string(index=False))
+
+# %%
+# For the non-linear model
+
+perm_nonlinear = permutation_importance(
     model_nonlinear, X_test, y_test, scoring="roc_auc", n_repeats=10, random_state=0
 )
 
-importances = pd.DataFrame({
+importances_nonlinear = pd.DataFrame({
     "feature": X_test.columns,
-    "importance_mean": perm_result.importances_mean,
-    "importance_std": perm_result.importances_std,
+    "importance_mean": perm_nonlinear.importances_mean,
+    "importance_std": perm_nonlinear.importances_std,
 }).sort_values("importance_mean", ascending=False)
 
-print("Permutation importance (drop in AUC when a feature is shuffled):")
-print(importances.to_string(index=False))
+print("Permutation importance (drop in prediction performance when a feature is shuffled):")
+print(importances_nonlinear.to_string(index=False))
 
 # %%
 # Partial dependence of age, by sex - non-linear model
@@ -137,6 +155,11 @@ ax.set_title("Partial dependence of age, by sex - non-linear model")
 ax.legend()
 fig.tight_layout()
 plt.show()
+
+# %%
+# The ordering of which variables are important for prediction are quite similar
+# Across the two models.
+# Let's now understand the difference in the predictions
 
 # %%
 # Partial dependence of age, by sex - linear model
