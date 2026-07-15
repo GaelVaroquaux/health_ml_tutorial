@@ -37,7 +37,7 @@ html_theme_options = {
     "github_url": "https://github.com/GaelVaroquaux/health_ml_tutorial",
     "use_edit_page_button": False,
     "show_toc_level": 2,
-    "primary_sidebar_items": {
+    "html_sidebars": {
         "**": [
             # Sphinx-Gallery sidebar components (launch buttons)
             # https://sphinx-gallery.github.io/stable/advanced.html#using-sphinx-gallery-sidebar-components
