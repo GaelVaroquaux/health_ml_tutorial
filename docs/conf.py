@@ -102,11 +102,11 @@ sphinx_gallery_conf = {
     # sphinx-gallery. It installs required packages in the Pyodide environment
     # and applies the same poster-style matplotlib settings as matplotlibrc so
     # that the figures look consistent when run in JupyterLite or Binder.
-    "first_notebook_cell": (
-        "%pip install numpy matplotlib 'scikit-learn<1.6' pandas hazardous skrub\n"
-        "import matplotlib\n"
-        f"matplotlib.rcParams.update({_poster_rcparams!r})"
-    ),
+    "first_notebook_cell": "\n".join([
+        "%pip install numpy matplotlib 'scikit-learn<1.6' pandas hazardous skrub",
+        "import matplotlib",
+        f"matplotlib.rcParams.update({_poster_rcparams!r})",
+    ]),
     # Poster-style rcParams applied to every gallery figure during the
     # sphinx-gallery build (mirrors the settings in examples/matplotlibrc).
     "plot_rcparams": _poster_rcparams,
