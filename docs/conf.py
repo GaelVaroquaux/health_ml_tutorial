@@ -28,6 +28,18 @@ extensions = [
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+html_sidebars = {
+    "**": [
+        # Sphinx-Gallery sidebar components (launch buttons)
+        # https://sphinx-gallery.github.io/stable/advanced.html#using-sphinx-gallery-sidebar-components
+        "sg_launcher_links",
+        "page-toc",
+        # Sphinx-Gallery sidebar components (download buttons)
+        # https://sphinx-gallery.github.io/stable/advanced.html#using-sphinx-gallery-sidebar-components
+        "sg_download_links",
+    ],
+}
+
 # -- Options for HTML output -------------------------------------------------
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
@@ -37,18 +49,7 @@ html_theme_options = {
     "github_url": "https://github.com/GaelVaroquaux/health_ml_tutorial",
     "use_edit_page_button": False,
     "show_toc_level": 2,
-    "html_sidebars": {
-        "**": [
-            # Sphinx-Gallery sidebar components (launch buttons)
-            # https://sphinx-gallery.github.io/stable/advanced.html#using-sphinx-gallery-sidebar-components
-            "sg_launcher_links",
-            "page-toc",
-            # Sphinx-Gallery sidebar components (download buttons)
-            # https://sphinx-gallery.github.io/stable/advanced.html#using-sphinx-gallery-sidebar-components
-            "sg_download_links",
-        ],
         "auto_examples/index": [],
-    },
     "secondary_sidebar_items": {},
 }
 
