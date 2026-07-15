@@ -39,11 +39,13 @@ html_theme_options = {
     "show_toc_level": 2,
     "secondary_sidebar_items": {
         "**": [
+            # Sphinx-Gallery sidebar components (launch buttons)
+            # https://sphinx-gallery.github.io/stable/advanced.html#using-sphinx-gallery-sidebar-components
+            "sg_launcher_links",
             "page-toc",
-            # Sphinx-Gallery sidebar components (download and launch buttons)
+            # Sphinx-Gallery sidebar components (download buttons)
             # https://sphinx-gallery.github.io/stable/advanced.html#using-sphinx-gallery-sidebar-components
             "sg_download_links",
-            "sg_launcher_links",
         ],
         "auto_examples/index": [],
     },
