@@ -134,6 +134,9 @@ print(importances_nonlinear.to_string(index=False))
 # %%
 # For the linear model
 # ......................
+#
+# We plot both the prediction of the model (averaged across the population),
+# and the average observed mortality for each age bin.
 
 import matplotlib.pyplot as plt
 from sklearn.inspection import partial_dependence
@@ -166,6 +169,17 @@ plt.ylabel("predicted probability of death within 5 years")
 plt.title("Partial dependence of age, by sex - linear model")
 plt.legend()
 plt.tight_layout()
+
+# %%
+# What we see is that the model appears a bit as a "smoother" compared to the
+# bin-wise average observed mortality. This is a good picture to have in mind for
+# machine learning.
+#
+# This "smoothing" is a tradeoff to have in mind. More smoothing removes noise,
+# but can also remove useful trends.
+#
+# The non-linear model is more flexible, and can capture more complex trends, but
+# it can also capture more noise (overfitting).
 
 # %%
 # For the non-linear model
