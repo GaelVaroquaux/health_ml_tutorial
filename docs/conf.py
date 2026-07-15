@@ -34,6 +34,10 @@ html_css_files = [
     "css/custom.css",
 ]
 
+html_js_files = [
+    "js/navbar-scroll.js",
+]
+
 html_sidebars = {
     "**": [
         # Sphinx-Gallery sidebar components (launch buttons)
