@@ -15,7 +15,7 @@
 figure.figsize : 5.5, 4.0
 figure.dpi     : 100
 
-savefig.dpi : 6000
+savefig.dpi : 300
 
 ### Font sizes  (seaborn poster-context style: roughly 1.4× the defaults)
 font.size        : 14
