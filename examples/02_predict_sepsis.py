@@ -18,14 +18,21 @@ uses these covariates to predict.
 # Challenge 2019, a public dataset of 40,336 ICU patients:
 
 import pandas as pd
-
 df = pd.read_csv("physionet_sepsis.csv")
 
+# %%
+# Data overview
+from skrub import TableReport
+TableReport(df)
+
+# %%
+# We will predict sepsis from a small number of covariates:
 X = df[["age", "sex", "hours_before_icu", "diastolic_bp_mmhg"]]
 y = df["sepsis"]
 
 print("Covariates used:", X.columns.tolist())
-print("\nSepsis rate:", y.mean())
+print("Sepsis rate:", y.mean())
+
 
 # %%
 # Model fitting and prediction
@@ -70,12 +77,7 @@ print(f"Held-out AUC, linear model (logistic regression): {auc_linear:.3f}")
 # --------------------------------------------
 #
 # This is skrub's default classification pipeline: a ``TableVectorizer``
-# followed by a ``HistGradientBoostingClassifier``. With sepsis this rare,
-# a ``RandomForestClassifier`` or ``ExtraTreesClassifier`` left at their
-# default settings (unlimited tree depth) over-fit badly and end up
-# *worse* than the linear model - gradient boosting's default is much
-# more conservative out of the box, and is also the fastest of the three
-# to fit.
+# followed by a ``HistGradientBoostingClassifier``.
 
 model_nonlinear = tabular_pipeline("classifier")
 model_nonlinear.fit(X_train, y_train)
@@ -98,7 +100,9 @@ print(f"Held-out AUC, non-linear model (gradient boosting): {auc_nonlinear:.3f}"
 #
 # We use permutation importance to see which variables drive the
 # prediction.
-
+#
+# For the linear model
+# ....................
 from sklearn.inspection import permutation_importance
 
 perm_linear = permutation_importance(
@@ -108,7 +112,6 @@ perm_linear = permutation_importance(
 importances_linear = pd.DataFrame({
     "feature": X_test.columns,
     "importance_mean": perm_linear.importances_mean,
-    "importance_std": perm_linear.importances_std,
 }).sort_values("importance_mean", ascending=False)
 
 print("Permutation importance (drop in prediction performance when a feature is shuffled):")
@@ -116,6 +119,7 @@ print(importances_linear.to_string(index=False))
 
 # %%
 # For the non-linear model
+# ........................
 
 perm_nonlinear = permutation_importance(
     model_nonlinear, X_test, y_test, scoring="roc_auc", n_repeats=10, random_state=0
@@ -149,19 +153,17 @@ X_test_complete = X_test.dropna(subset=["diastolic_bp_mmhg"])
 y_test_complete = y_test.loc[X_test_complete.index]
 
 # %%
-# Diastolic blood pressure is also a near-continuous measurement, so we
-# group it into 8 bins of equal size before averaging observed sepsis
-# rates - otherwise, especially once split by sex, some bins would hold
-# only a handful of patients, and the "observed" curve would be pure
-# noise. We use the mean diastolic blood pressure inside each bin as its
-# position on the x-axis.
+# We will plot local averages of the observed sepsis rate, to compare with the model's
+# predictions. For this, we need to group patients by diastolic blood pressure into
+# 8 bins of equal size before averaging observed sepsis.
 
 observed = X_test_complete[["sex", "diastolic_bp_mmhg"]].copy()
 observed["sepsis"] = y_test_complete
 observed["dbp_bin"] = pd.qcut(observed["diastolic_bp_mmhg"], q=8)
 
+# %%
+# Some plotting setup: colors and markers
 import matplotlib.pyplot as plt
-from sklearn.inspection import partial_dependence
 
 sex_colors = {"M": "tab:blue", "F": "tab:orange"}
 sex_markers = {"M": "o", "F": "^"}
@@ -170,6 +172,7 @@ sex_markers = {"M": "o", "F": "^"}
 # For the linear model
 # ......................
 
+from sklearn.inspection import partial_dependence
 pd_population_linear = partial_dependence(
     model_linear, X_test_complete, features=["diastolic_bp_mmhg"], grid_resolution=30
 )
@@ -199,11 +202,10 @@ plt.legend(fontsize=8)
 plt.tight_layout()
 
 # %%
-# The linear model draws a straight line, decreasing steadily as
-# diastolic blood pressure rises. This only captures part of the
-# picture: low blood pressure (a sign of poor perfusion / possible
-# septic shock) drives risk up sharply, but risk does not keep
-# decreasing forever as pressure rises further.
+# The linear model decreases monotonically as diastolic blood pressure rises.
+# This only captures part of the picture: low blood pressure (a sign of poor
+# perfusion / possible septic shock) drives risk up sharply, but risk does 
+# not keep decreasing forever as pressure rises further.
 
 # %%
 # For the non-linear model
@@ -240,12 +242,122 @@ plt.legend(fontsize=8)
 plt.tight_layout()
 
 # %%
-# The non-linear model instead traces a bumpy, non-monotonic curve that
-# tracks the jagged rises and dips of the observed rates much more
-# closely than the linear model's straight line. Whether those bumps
-# reflect real physiology or just noise in this particular sample is
-# exactly the kind of question the next example, on under- and
-# over-fitting, will help answer.
+# The non-linear model instead traces a bumpy, non-monotonic curve. It is likely
+# that these bumps reflect noise in addition to real physiology, but this model
+# predicts better the observed sepsis rate than the linear model, and must thus
+# be capturing some useful signal.
+
+
+# %%
+# Partial dependence on delay before ICU admission
+# -------------------------------------------------
+
+X_test_delay = X_test.dropna(subset=["hours_before_icu"])
+y_test_delay = y_test.loc[X_test_delay.index]
+
+observed_delay = X_test_delay[["sex", "hours_before_icu"]].copy()
+observed_delay["sepsis"] = y_test_delay
+observed_delay["delay_bin"] = pd.qcut(observed_delay["hours_before_icu"], q=8)
+
+# %%
+# For the linear model
+# ......................
+
+pd_population_linear_delay = partial_dependence(
+    model_linear, X_test_delay, features=["hours_before_icu"], grid_resolution=30
+)
+
+plt.figure()
+plt.plot(
+    pd_population_linear_delay["grid_values"][0],
+    pd_population_linear_delay["average"][0],
+    color="black",
+    linewidth=2,
+    label="Model prediction, averaged over whole population",
+)
+
+for sex_value in ["M", "F"]:
+    is_sex = X_test_delay["sex"] == sex_value
+    pd_sex_linear_delay = partial_dependence(
+        model_linear, X_test_delay[is_sex], features=["hours_before_icu"], grid_resolution=30
+    )
+    plt.plot(
+        pd_sex_linear_delay["grid_values"][0],
+        pd_sex_linear_delay["average"][0],
+        color=sex_colors[sex_value],
+        linewidth=2,
+        label=f"Model prediction, averaged for sex = {sex_value}",
+    )
+
+    observed_sex = observed_delay[observed_delay["sex"] == sex_value]
+    observed_by_bin = observed_sex.groupby("delay_bin")[["hours_before_icu", "sepsis"]].mean()
+    plt.plot(
+        observed_by_bin["hours_before_icu"],
+        observed_by_bin["sepsis"],
+        color=sex_colors[sex_value],
+        linewidth=1,
+        linestyle="--",
+        marker=sex_markers[sex_value],
+        markersize=4,
+        label=f"Average sepsis rate, sex = {sex_value}",
+    )
+
+plt.xlabel("hours between hospital and ICU admission")
+plt.ylabel("predicted probability of sepsis")
+plt.title("Partial dependence of admission delay, by sex - linear model")
+plt.legend(fontsize=8)
+plt.tight_layout()
+
+# %%
+# For the non-linear model
+# .........................
+
+pd_population_nonlinear_delay = partial_dependence(
+    model_nonlinear, X_test_delay, features=["hours_before_icu"], grid_resolution=30
+)
+
+plt.figure()
+plt.plot(
+    pd_population_nonlinear_delay["grid_values"][0],
+    pd_population_nonlinear_delay["average"][0],
+    color="black",
+    linewidth=2,
+    label="Model prediction, averaged over whole population",
+)
+
+for sex_value in ["M", "F"]:
+    is_sex = X_test_delay["sex"] == sex_value
+    pd_sex_nonlinear_delay = partial_dependence(
+        model_nonlinear, X_test_delay[is_sex], features=["hours_before_icu"], grid_resolution=30
+    )
+    plt.plot(
+        pd_sex_nonlinear_delay["grid_values"][0],
+        pd_sex_nonlinear_delay["average"][0],
+        color=sex_colors[sex_value],
+        linewidth=2,
+        label=f"Model prediction, averaged for sex = {sex_value}",
+    )
+
+    observed_sex = observed_delay[observed_delay["sex"] == sex_value]
+    observed_by_bin = observed_sex.groupby("delay_bin")[["hours_before_icu", "sepsis"]].mean()
+    plt.plot(
+        observed_by_bin["hours_before_icu"],
+        observed_by_bin["sepsis"],
+        color=sex_colors[sex_value],
+        linewidth=1,
+        linestyle="--",
+        marker=sex_markers[sex_value],
+        markersize=4,
+        label=f"Average sepsis rate, sex = {sex_value}",
+    )
+
+plt.xlabel("hours between hospital and ICU admission")
+plt.ylabel("predicted probability of sepsis")
+plt.title("Partial dependence of admission delay, by sex - non-linear model")
+plt.legend(fontsize=8)
+plt.tight_layout()
+
+
 
 # %%
 # 2D partial dependence: delay before ICU admission and diastolic BP
