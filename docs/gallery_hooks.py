@@ -7,5 +7,8 @@ _POSTER_RCPARAMS = dict(mpl.rc_params_from_file(_RC_FILE, use_default_template=F
 
 
 def apply_poster_rcparams(gallery_conf, fname):
-    """Apply poster-style rcParams before each gallery example."""
+    """Apply poster-style rcParams before each gallery example.
+
+    Parameters are required by sphinx-gallery's reset_modules callback API.
+    """
     mpl.rcParams.update(_POSTER_RCPARAMS)
