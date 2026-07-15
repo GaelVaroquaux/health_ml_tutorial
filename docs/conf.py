@@ -29,6 +29,10 @@ extensions = [
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+# Keep -W strictness while ignoring this known, narrowly scoped warning:
+# sphinx_gallery_conf includes a callable in reset_modules, which Sphinx
+# cannot cache and reports as config.cache.
+suppress_warnings = ["config.cache"]
 
 html_static_path = ["_static"]
 
