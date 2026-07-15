@@ -7,6 +7,8 @@ import glob
 import os
 import shutil
 
+import matplotlib as _mpl
+
 # -- Project information -----------------------------------------------------
 project = "Health ML Tutorial"
 copyright = "2026, Gaël Varoquaux"
@@ -61,6 +63,11 @@ html_theme_options = {
 }
 
 # -- Sphinx-Gallery configuration --------------------------------------------
+# Parse examples/matplotlibrc once to use as the single source of truth for
+# poster-style figure cosmetics across all execution environments.
+_rc_file = os.path.join(os.path.dirname(__file__), "..", "examples", "matplotlibrc")
+_poster_rcparams = dict(_mpl.rc_params_from_file(_rc_file, use_default_template=False))
+
 # The first notebook cell is prepended to every converted notebook so that
 # the required packages are installed when running inside JupyterLite (Pyodide).
 sphinx_gallery_conf = {
@@ -98,43 +105,11 @@ sphinx_gallery_conf = {
     "first_notebook_cell": (
         "%pip install numpy matplotlib 'scikit-learn<1.6' pandas hazardous skrub\n"
         "import matplotlib\n"
-        "matplotlib.rcParams.update({\n"
-        "    'figure.figsize': (5.5, 4.0),\n"
-        "    'font.size': 14,\n"
-        "    'axes.titlesize': 16,\n"
-        "    'axes.labelsize': 14,\n"
-        "    'xtick.labelsize': 12,\n"
-        "    'ytick.labelsize': 12,\n"
-        "    'legend.fontsize': 12,\n"
-        "    'lines.linewidth': 2.5,\n"
-        "    'lines.markersize': 8,\n"
-        "    'axes.linewidth': 1.5,\n"
-        "    'patch.linewidth': 1.0,\n"
-        "    'xtick.major.width': 1.5,\n"
-        "    'ytick.major.width': 1.5,\n"
-        "    'xtick.major.size': 6,\n"
-        "    'ytick.major.size': 6,\n"
-        "})"
+        f"matplotlib.rcParams.update({_poster_rcparams!r})"
     ),
     # Poster-style rcParams applied to every gallery figure during the
     # sphinx-gallery build (mirrors the settings in examples/matplotlibrc).
-    "plot_rcparams": {
-        "figure.figsize": (5.5, 4.0),
-        "font.size": 14,
-        "axes.titlesize": 16,
-        "axes.labelsize": 14,
-        "xtick.labelsize": 12,
-        "ytick.labelsize": 12,
-        "legend.fontsize": 12,
-        "lines.linewidth": 2.5,
-        "lines.markersize": 8,
-        "axes.linewidth": 1.5,
-        "patch.linewidth": 1.0,
-        "xtick.major.width": 1.5,
-        "ytick.major.width": 1.5,
-        "xtick.major.size": 6,
-        "ytick.major.size": 6,
-    },
+    "plot_rcparams": _poster_rcparams,
 }
 
 # -- Data files for JupyterLite ------------------------------------------------
