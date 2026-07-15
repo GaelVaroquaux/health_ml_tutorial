@@ -6,8 +6,13 @@
 import glob
 import os
 import shutil
+import sys
 
 import matplotlib as _mpl
+
+# Ensure helper modules next to conf.py are importable by string FQNs in
+# sphinx_gallery_conf (e.g., reset_modules hooks).
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 # -- Project information -----------------------------------------------------
 project = "Health ML Tutorial"
@@ -29,11 +34,6 @@ extensions = [
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
-# Keep -W strictness while ignoring this known warning category:
-# sphinx_gallery_conf includes a callable in reset_modules, which Sphinx
-# cannot cache and reports as config.cache. This suppresses any config.cache
-# warning, and should be revisited if other config.cache warnings appear.
-suppress_warnings = ["config.cache"]
 
 html_static_path = ["_static"]
 
@@ -72,11 +72,6 @@ html_theme_options = {
 # poster-style figure cosmetics across all execution environments.
 _rc_file = os.path.join(os.path.dirname(__file__), "..", "examples", "matplotlibrc")
 _poster_rcparams = dict(_mpl.rc_params_from_file(_rc_file, use_default_template=False))
-
-
-def _apply_poster_rcparams(gallery_conf, fname):
-    """Apply poster-style rcParams before each gallery example."""
-    _mpl.rcParams.update(_poster_rcparams)
 
 # The first notebook cell is prepended to every converted notebook so that
 # the required packages are installed when running inside JupyterLite (Pyodide).
@@ -121,7 +116,9 @@ sphinx_gallery_conf = {
     # sphinx-gallery build (mirrors the settings in examples/matplotlibrc).
     # sphinx-gallery calls each callable in reset_modules as
     # func(gallery_conf, fname) before (and/or after) each example runs.
-    "reset_modules": ("matplotlib", _apply_poster_rcparams),
+    # Use a fully-qualified string for the custom reset hook so
+    # sphinx_gallery_conf stays cacheable under Sphinx strict warning mode.
+    "reset_modules": ("matplotlib", "gallery_hooks.apply_poster_rcparams"),
 }
 
 # -- Data files for JupyterLite ------------------------------------------------
