@@ -16,6 +16,7 @@ dependencies = [
     "pandas",
     "hazardous",
     "skrub",
+    "seaborn",
 ]
 
 [project.optional-dependencies]

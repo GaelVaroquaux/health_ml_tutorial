@@ -117,7 +117,7 @@ sphinx_gallery_conf = {
     # and applies the same poster-style matplotlib settings as matplotlibrc so
     # that the figures look consistent when run in JupyterLite or Binder.
     "first_notebook_cell": "\n".join([
-        "%pip install numpy matplotlib 'scikit-learn<1.6' pandas hazardous skrub",
+        "%pip install numpy matplotlib 'scikit-learn' pandas hazardous skrub seaborn",
         "import matplotlib",
         f"matplotlib.rcParams.update({_poster_rcparams!r})",
     ]),
