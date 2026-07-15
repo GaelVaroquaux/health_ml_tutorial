@@ -92,10 +92,49 @@ sphinx_gallery_conf = {
         "use_jupyter_lab": True,
     },
     # This cell is inserted at the top of every notebook produced by
-    # sphinx-gallery. It installs required packages in the Pyodide environment.
+    # sphinx-gallery. It installs required packages in the Pyodide environment
+    # and applies the same poster-style matplotlib settings as matplotlibrc so
+    # that the figures look consistent when run in JupyterLite or Binder.
     "first_notebook_cell": (
-        "%pip install numpy matplotlib 'scikit-learn<1.6' pandas hazardous skrub"
+        "%pip install numpy matplotlib 'scikit-learn<1.6' pandas hazardous skrub\n"
+        "import matplotlib\n"
+        "matplotlib.rcParams.update({\n"
+        "    'figure.figsize': (5.5, 4.0),\n"
+        "    'font.size': 14,\n"
+        "    'axes.titlesize': 16,\n"
+        "    'axes.labelsize': 14,\n"
+        "    'xtick.labelsize': 12,\n"
+        "    'ytick.labelsize': 12,\n"
+        "    'legend.fontsize': 12,\n"
+        "    'lines.linewidth': 2.5,\n"
+        "    'lines.markersize': 8,\n"
+        "    'axes.linewidth': 1.5,\n"
+        "    'patch.linewidth': 1.0,\n"
+        "    'xtick.major.width': 1.5,\n"
+        "    'ytick.major.width': 1.5,\n"
+        "    'xtick.major.size': 6,\n"
+        "    'ytick.major.size': 6,\n"
+        "})"
     ),
+    # Poster-style rcParams applied to every gallery figure during the
+    # sphinx-gallery build (mirrors the settings in examples/matplotlibrc).
+    "plot_rcparams": {
+        "figure.figsize": (5.5, 4.0),
+        "font.size": 14,
+        "axes.titlesize": 16,
+        "axes.labelsize": 14,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        "legend.fontsize": 12,
+        "lines.linewidth": 2.5,
+        "lines.markersize": 8,
+        "axes.linewidth": 1.5,
+        "patch.linewidth": 1.0,
+        "xtick.major.width": 1.5,
+        "ytick.major.width": 1.5,
+        "xtick.major.size": 6,
+        "ytick.major.size": 6,
+    },
 }
 
 # -- Data files for JupyterLite ------------------------------------------------
@@ -122,5 +161,10 @@ _jupyterlite_data_dir = os.path.join(os.path.dirname(__file__), "jupyterlite_dat
 os.makedirs(_jupyterlite_data_dir, exist_ok=True)
 for _csv_path in glob.glob(os.path.join(os.path.dirname(__file__), "..", "examples", "*.csv")):
     shutil.copy(_csv_path, _jupyterlite_data_dir)
+# Copy the matplotlibrc into the JupyterLite virtual filesystem so that
+# matplotlib picks it up from the working directory when notebooks run in
+# the browser (Pyodide checks the cwd for matplotlibrc at import time).
+_matplotlibrc_src = os.path.join(os.path.dirname(__file__), "..", "examples", "matplotlibrc")
+shutil.copy(_matplotlibrc_src, _jupyterlite_data_dir)
 
 jupyterlite_contents = ["jupyterlite_data"]
