@@ -237,12 +237,16 @@ axes[1].legend(fontsize=8)
 fig.tight_layout()
 
 # %%
-# On the study population (left), both curves stay reasonably close to
-# the observed rate. On the target population (right), where long
-# delays are now common, the linear model's straight line drifts far
-# below the observed rate, while the non-linear model - which could
-# represent a non-monotonic link, and had at least *some* long-delay
-# patients to learn from in the study population - stays much closer.
+# On the study population (left), most patients are admitted with
+# little delay, and that is exactly where both curves track the
+# observed rate. Away from that dense region, the two curves diverge
+# from each other, but few study patients are there to notice. On the
+# target population (right), where long delays are now common, that
+# same region is where most patients sit, and the difference matters:
+# the linear model's straight line drifts far below the observed rate,
+# while the non-linear model - which could represent a non-monotonic
+# link, and had at least *some* long-delay patients to learn from in
+# the study population - stays much closer.
 #
 # This is the essence of covariate shift: nothing changed in *how*
 # admission delay relates to sepsis risk, only *how often* each delay
