@@ -76,6 +76,7 @@ docs/sg_execution_times.rst
 # jupyterlite build artefacts
 docs/jupyterlite_sphinx_*
 docs/jupyterlite_contents/
+docs/jupyterlite_data/
 docs/.jupyterlite.doit.db
 docs/*.tgz
 

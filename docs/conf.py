@@ -3,6 +3,10 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import glob
+import os
+import shutil
+
 # -- Project information -----------------------------------------------------
 project = "Health ML Tutorial"
 copyright = "2026, Gaël Varoquaux"
@@ -79,3 +83,30 @@ sphinx_gallery_conf = {
         "%pip install numpy matplotlib 'scikit-learn<1.6' pandas hazardous skrub"
     ),
 }
+
+# -- Data files for JupyterLite ------------------------------------------------
+# JupyterLite runs each notebook entirely in the browser (Pyodide/WebAssembly)
+# with no access to the local filesystem, so any data file an example reads
+# with a relative path (e.g. plot_predict_5yr_mortality.py's
+# pd.read_csv("nhanes_....csv")) must be bundled into the JupyterLite virtual
+# filesystem explicitly. Sphinx-Gallery's "jupyterlite_contents" only copies
+# the *generated notebooks* there, not the data files they read - see
+# https://sphinx-gallery.github.io/stable/configuration.html#jupyterlite
+#
+# jupyterlite-sphinx's own "jupyterlite_contents" config (a list of paths,
+# each copied recursively into the JupyterLite build - see
+# https://jupyterlite-sphinx.readthedocs.io/en/stable/configuration.html#jupyterlite-content)
+# is what we use to add the CSVs on top of what Sphinx-Gallery already adds:
+# it appends its own notebook directory to this list rather than overwriting
+# it, so both coexist.
+#
+# The CSVs are copied here (rather than committing a second copy) under
+# auto_examples/, the same path the generated notebook ends up at, so that
+# the notebook's relative pd.read_csv(...) resolves in the browser exactly
+# like it does when Sphinx-Gallery executes the example during the build.
+_jupyterlite_data_dir = os.path.join(os.path.dirname(__file__), "jupyterlite_data", "auto_examples")
+os.makedirs(_jupyterlite_data_dir, exist_ok=True)
+for _csv_path in glob.glob(os.path.join(os.path.dirname(__file__), "..", "examples", "*.csv")):
+    shutil.copy(_csv_path, _jupyterlite_data_dir)
+
+jupyterlite_contents = ["jupyterlite_data"]
