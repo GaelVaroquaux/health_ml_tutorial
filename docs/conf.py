@@ -69,6 +69,11 @@ html_theme_options = {
     "use_edit_page_button": False,
     "show_toc_level": 2,
     "secondary_sidebar_items": {},
+    # Adds the built-in pydata-sphinx-theme collapse/expand toggle button
+    # at the bottom of the primary (left) sidebar. On small screens the
+    # sidebar already collapses automatically via Bootstrap responsive
+    # classes; this button lets users manually hide it on larger screens too.
+    "primary_sidebar_end": ["sidebar-collapse.html"],
 }
 
 # -- Sphinx-Gallery configuration --------------------------------------------
