@@ -8,7 +8,7 @@ Materials to understand concepts important to Machine Learning in Health:
 practical Python examples with interactive Jupyter notebooks that run
 entirely in your browser.
 
-This course address two topics:
+This course addresses two topics:
 
 * **How machine-learning tools provide flexible models** that can relate a
   health outcome (called "target" or "y" in machine learning) to
@@ -17,13 +17,13 @@ This course address two topics:
 * **Multiple biases that can arise in the data** and prevent the success
   of models, flexible or not
 
-The course is based on examples run on real health data, giving the
+The course is based on notebooks that run on real health data, giving the
 practical elements to tackle the complexity of real statistical learning
 questions in health.
 
-.. sidebar:: Running the examples
+.. sidebar:: Runnable code
 
-    Each example page has **Launch** buttons at the top that open the
+    Each page has **Launch** buttons at the top left that open the
     corresponding notebook in your browser with JupyterLite.
 
 .. include:: auto_examples/index.rst
