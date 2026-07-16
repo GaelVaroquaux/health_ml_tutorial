@@ -179,21 +179,25 @@ X_train, X_test, y_train, y_test = train_test_split(
 # Before fitting any model, the Kaplan-Meier estimator gives a
 # non-parametric estimate of the population's survival curve - the
 # probability of still being alive at each point in time - using both
-# the deaths and the censored participants.
+# the deaths and the censored participants. Rather than implementing
+# this ourselves, we use ``scipy.stats``, which has built-in support for
+# right-censored data through ``CensoredData``: we give it the exact
+# durations for participants who died (``uncensored``) and the observed
+# durations for participants still alive at the end of follow-up
+# (``right``, for "right-censored"), and ``ecdf`` returns the
+# Kaplan-Meier survival curve as its survival function ``.sf``.
+
+from scipy.stats import CensoredData, ecdf
 
 
 def kaplan_meier(duration_values, event_values):
-    order = duration_values.argsort()
-    sorted_duration = duration_values.values[order]
-    sorted_event = event_values.values[order]
-    n_at_risk = range(len(sorted_duration), 0, -1)
-    survival = 1.0
-    survival_curve = [1.0]
-    for died, n in zip(sorted_event, n_at_risk):
-        if died:
-            survival = survival * (1 - 1 / n)
-        survival_curve.append(survival)
-    time_points = [0] + list(sorted_duration)
+    observed_duration = duration_values[event_values == 1]
+    censored_duration = duration_values[event_values == 0]
+    survival_function = ecdf(
+        CensoredData(uncensored=observed_duration, right=censored_duration)
+    ).sf
+    time_points = [0] + list(survival_function.quantiles)
+    survival_curve = [1.0] + list(survival_function.probabilities)
     return time_points, survival_curve
 
 
