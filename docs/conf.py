@@ -77,6 +77,7 @@ intersphinx_mapping = {
     "sklearn": ("https://scikit-learn.org/stable", None),
     "pandas": ("http://pandas.pydata.org/pandas-docs/stable", None),
     "seaborn": ("http://seaborn.pydata.org", None),
+    "hazardous": ("https://soda-inria.github.io/hazardous", None),
 }
 
 # -- Options for HTML output -------------------------------------------------
