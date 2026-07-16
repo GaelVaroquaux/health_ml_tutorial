@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 project = "Health ML Tutorial"
 copyright = "2026, Gaël Varoquaux"
 author = "Gaël Varoquaux"
-release = "0.1"
+release = ""
 
 # -- General configuration ---------------------------------------------------
 # sphinx_gallery.gen_gallery must be listed before jupyterlite_sphinx so
@@ -99,6 +99,12 @@ if _has_sphinxext_opengraph:
     ogp_enable_meta_description = True
 
 html_theme_options = {
+    "logo": {
+        "text": project,
+        "image_relative": html_logo,
+        "image_light": html_logo,
+        "image_dark": html_logo,
+    },
     "github_url": "https://github.com/GaelVaroquaux/health_ml_tutorial",
     "use_edit_page_button": False,
     "show_toc_level": 2,
