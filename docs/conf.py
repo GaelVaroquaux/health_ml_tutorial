@@ -46,7 +46,11 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 html_static_path = ["_static"]
 
-html_logo = "laptop-medical-solid-full.png"
+# Project logo, to place at the top of the sidebar.
+html_logo = "_static/laptop-medical-solid.png"
+
+# Icon to put in the browser tab.
+html_favicon = "_static/laptop-medical-solid.png"
 
 html_css_files = [
     "css/custom.css",
