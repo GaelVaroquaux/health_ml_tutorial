@@ -205,7 +205,12 @@ plt.tight_layout()
 # ``SurvivalBoost`` is a gradient-boosted survival model: rather than
 # predicting a single number, it predicts a whole survival curve for
 # each participant, using every participant - censored or not - during
-# training.
+# training. It is described in Alberge, Maladiere, Grisel, Abécassis
+# and Varoquaux (2025), `"Survival Models: Proper Scoring Rule and
+# Stochastic Optimization with Competing Risks"
+# <https://proceedings.mlr.press/v258/alberge25a.html>`_, Proceedings
+# of the 28th International Conference on Artificial Intelligence and
+# Statistics (AISTATS), PMLR 258:3619-3627.
 
 from hazardous import SurvivalBoost
 
