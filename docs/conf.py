@@ -70,7 +70,7 @@ html_sidebars = {
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 docstitle = "Health ML tutorial"
-html_baseurl = "https://gaelvaroquaux.github.io/health_ml_tutorial/"
+html_baseurl = "https://gaelvaroquaux.github.io/health_ml_tutorial"
 
 ogp_site_url = html_baseurl
 ogp_site_name = project
