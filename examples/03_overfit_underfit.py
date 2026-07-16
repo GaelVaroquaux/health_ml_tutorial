@@ -101,16 +101,16 @@ plt.tight_layout()
 # ---------------------------------------
 #
 # To make "under-fit" and "over-fit" concrete rather than abstract, we
-# look at the partial dependence of diastolic blood pressure - the
+# look at the partial dependence of the delay before ICU admission - the
 # clearest non-linear feature in the previous example - at three depths:
 # too shallow, the sweet spot, and unlimited.
 
 from sklearn.inspection import partial_dependence
 
-# A few patients are missing a diastolic blood pressure reading, so we
-# first drop them: the model can handle missing values internally, but
-# the plotting code below cannot.
-X_train_complete = X_train.dropna(subset=["diastolic_bp_mmhg"])
+# A few patients are missing this reading, so we first drop them: the
+# model can handle missing values internally, but the plotting code
+# below cannot.
+X_train_complete = X_train.dropna(subset=["hours_before_icu"])
 y_train_complete = y_train.loc[X_train_complete.index]
 
 depth_labels = ["under-fit (max_depth=1)", "sweet spot (max_depth=4)", "over-fit (max_depth=None)"]
@@ -126,23 +126,23 @@ for i in range(3):
     model = tabular_pipeline(DecisionTreeClassifier(max_depth=max_depth, random_state=0))
     model.fit(X_train_complete, y_train_complete)
     pd_result = partial_dependence(
-        model, X_train_complete, features=["diastolic_bp_mmhg"], grid_resolution=100
+        model, X_train_complete, features=["hours_before_icu"], grid_resolution=100
     )
     ax.plot(pd_result["grid_values"][0], pd_result["average"][0], color="black")
-    ax.set_xlabel("diastolic BP (mmHg)")
+    ax.set_xlabel("hours before ICU admission")
     ax.set_title(label)
 
 axes[0].set_ylabel("predicted probability of sepsis")
 fig.tight_layout()
 
 # %%
-# The under-fit tree is completely flat: with only one yes/no question
-# to spend, it spent it on a different, more informative feature (the
-# delay before ICU admission) and has nothing left to represent a link
-# with diastolic blood pressure at all. The over-fit tree is a wild,
-# jagged staircase, chasing every idiosyncrasy of the training patients.
-# The sweet-spot tree in the middle traces a much more plausible curve,
-# decreasing sharply at low blood pressure.
+# The under-fit tree can only ask one yes/no question, so it collapses
+# the real curve into a single step: patients admitted right away
+# versus everyone else. The sweet-spot tree in the middle traces a much
+# more plausible multi-step curve: risk is elevated for the longest
+# delays, dips for intermediate ones, and rises sharply for immediate
+# admissions. The over-fit tree is a wild, jagged staircase, chasing
+# every idiosyncrasy of the training patients.
 
 # %%
 # Averaging many trees tames over-fitting
