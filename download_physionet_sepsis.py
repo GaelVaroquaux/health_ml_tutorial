@@ -44,14 +44,17 @@ Output columns:
     sepsis                   - 1 if the patient is later flagged septic,
                                0 otherwise
 
-This saves two CSVs:
+This saves three CSVs:
     - physionet_sepsis_full.csv, with every column above, saved next to
       this script (the project root). This is the reference dataset,
       kept out of examples/ so it does not get shipped to JupyterLite.
     - examples/physionet_sepsis.csv, a lighter version with only the
-      columns the example scripts actually use (age, sex,
-      hours_before_icu, diastolic_bp_mmhg, sepsis). This is the one
-      that gets shipped alongside the notebooks.
+      columns the prediction/overfitting/covariate-shift examples use
+      (age, sex, hours_before_icu, diastolic_bp_mmhg, sepsis).
+    - examples/physionet_sepsis_causal.csv, a different lighter version
+      with the columns the indication-bias example uses (age, sex, and
+      a handful of vitals/labs used to build a severity score).
+    Both light CSVs get shipped alongside the notebooks.
 
 Requires: pandas, requests
     pip install pandas requests
@@ -111,6 +114,10 @@ MEAN_COLUMNS = [
 
 # The columns actually used by the example scripts in examples/
 LIGHT_COLUMNS = ["age", "sex", "hours_before_icu", "diastolic_bp_mmhg", "sepsis"]
+CAUSAL_COLUMNS = [
+    "age", "sex", "heart_rate_bpm", "resp_rate", "temp_celsius",
+    "mean_arterial_bp_mmhg", "o2_sat_pct", "wbc_count", "creatinine_mgdl",
+]
 
 
 def list_patient_files(training_set):
@@ -183,3 +190,7 @@ if __name__ == "__main__":
     light_out_path = os.path.join(examples_dir, "physionet_sepsis.csv")
     df[LIGHT_COLUMNS].to_csv(light_out_path, index=False)
     print(f"Saved light dataset (used by the examples) to {light_out_path}")
+
+    causal_out_path = os.path.join(examples_dir, "physionet_sepsis_causal.csv")
+    df[CAUSAL_COLUMNS].to_csv(causal_out_path, index=False)
+    print(f"Saved causal-inference dataset to {causal_out_path}")
