@@ -1,17 +1,29 @@
 """
-Indication bias: when sicker patients get the treatment
+Indication bias: challenge in reasonning on interventions
 ============================================================
 
-In a randomized trial, who gets the treatment is decided by a coin
-flip. In routine care, it is decided by a clinician who looks at the
-patient - which means the sickest patients are often the ones most
-likely to receive an aggressive intervention, *because* they are the
-sickest. This is called *indication bias* (or confounding by
-indication): the indication for treatment is itself a marker of worse
-prognosis, so a naive comparison of treated and untreated patients
-mixes up the effect of the treatment with the effect of whatever made
-clinicians choose to treat.
+In health we often want to do more than mere prediction: we would like to
+intervene, change something on the patient or the care, to improve a
+health outcome. For instance, instance, we are predicting sepsis given
+the current situation, and we'd like to avoid it, and thus change our
+care strategy for the patient. We will call this change a "treatment".
 
+In routine care, the treatment is a consequence of many things, such as
+the patients baseline health or prior history. Often, the sickest
+patients get a different treatment than the more healthy one. This is
+called *indication bias* (or confounding by indication): the indication
+for treatment is itself a marker of worse prognosis, so a naive
+comparison of treated and untreated patients mixes up the effect of the
+treatment with the effect of whatever made clinicians choose to treat.
+This is unlike in a randomized trial, who gets the treatment is decided
+by a coin flip.
+
+As a consequence of indication bias, **using predictive models to reason
+on whether or not to assign a treatment, to intervene, is challenging.**
+
+
+Here, we illustrate these challenge, as well as possible solutions
+(though there is no magic bullet).
 Real ICU data has no known "true" treatment effect to check our
 methods against, so here we use real PhysioNet sepsis covariates, but
 simulate the treatment assignment and the outcome ourselves, with a
@@ -22,6 +34,15 @@ follows the discussion in Doutreligne and Varoquaux (2025), "How to
 select predictive models for decision-making or causal inference",
 GigaScience, which shows that a model's *predictive* accuracy does not
 tell you how good it will be at estimating a *causal* effect.
+
+|
+
+**Reference** Useful big-picture reading: Abécassis, J., Dumas, É.,
+Alberge, J., & Varoquaux, G. (2025). *From prediction to prescription:
+Machine learning and causal inference for the heterogeneous treatment
+effect.* Annual Review of Biomedical Data Science, 8.
+https://doi.org/10.1146/annurev-biodatasci-103123-095750
+
 """
 
 # %%
