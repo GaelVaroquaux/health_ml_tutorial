@@ -46,6 +46,8 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 html_static_path = ["_static"]
 
+html_logo = "_static/laptop-medical-solid-full.svg"
+
 html_css_files = [
     "css/custom.css",
 ]
