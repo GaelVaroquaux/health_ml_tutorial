@@ -2,11 +2,10 @@ div.sphx-glr-download-link-note {
     display: none;
 }
 
-/* Enable thumbnails to take only part of the width */
-.sphx-glr-thumbnails {
+/* Enable thumbnails to take only part of the width on screen not too
+ * small */
+@media screen and (min-width: 600px) .sphx-glr-thumbnails {
   width: unset; 
-  margin: 0px 0px 20px 0px;
-
 }
 
 div.sidebar, aside.sidebar {
