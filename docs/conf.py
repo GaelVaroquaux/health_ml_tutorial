@@ -113,6 +113,14 @@ sphinx_gallery_conf = {
     # so that it can group the examples into two titled mini-galleries -
     # see examples/index.rst itself for why.
     "copyfile_regex": r".*\.(csv|rst)",
+    # examples/index.rst uses the "minigallery" directive to group examples
+    # by file path rather than by fully-qualified object name, so this
+    # project has no use for the backreferences feature itself. It still
+    # needs to be set to a directory (rather than left as the default
+    # None) so that the minigallery directive does not emit a "treated as
+    # file paths or globs" warning on every build - which is exactly the
+    # behavior we want anyway.
+    "backreferences_dir": "gen_modules/backreferences",
     # Enable the JupyterLite launch button on every gallery page.
     # sphinx-gallery will automatically copy the generated notebooks into
     # jupyterlite_contents/auto_examples/ and register that directory with
