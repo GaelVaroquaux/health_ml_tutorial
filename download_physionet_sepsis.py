@@ -52,8 +52,10 @@ This saves three CSVs:
       columns the prediction/overfitting/covariate-shift examples use
       (age, sex, hours_before_icu, diastolic_bp_mmhg, sepsis).
     - examples/physionet_sepsis_causal.csv, a different lighter version
-      with the columns the indication-bias example uses (age, sex, and
-      a handful of vitals/labs used to build a severity score).
+      with the columns the indication-bias example uses: age, sex, a
+      handful of vitals/labs, the delay before ICU admission (studied
+      there as a real-world "intervention"), and the real sepsis
+      outcome.
     Both light CSVs get shipped alongside the notebooks.
 
 Requires: pandas, requests
@@ -117,6 +119,7 @@ LIGHT_COLUMNS = ["age", "sex", "hours_before_icu", "diastolic_bp_mmhg", "sepsis"
 CAUSAL_COLUMNS = [
     "age", "sex", "heart_rate_bpm", "resp_rate", "temp_celsius",
     "mean_arterial_bp_mmhg", "o2_sat_pct", "wbc_count", "creatinine_mgdl",
+    "hours_before_icu", "sepsis",
 ]
 
 

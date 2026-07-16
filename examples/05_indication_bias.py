@@ -4,32 +4,29 @@ Indication bias: challenge in reasonning on interventions
 
 In health we often want to do more than mere prediction: we would like to
 intervene, change something on the patient or the care, to improve a
-health outcome. For instance, instance, we are predicting sepsis given
-the current situation, and we'd like to avoid it, and thus change our
-care strategy for the patient. We will call this change a "treatment".
+health outcome. In example 02 and 04, ``hours_before_icu`` - the delay
+between hospital and ICU admission - was just a feature we predicted
+sepsis from. Here we ask a genuinely different question: hospitals build
+"rapid response" protocols specifically to shorten this delay, so **if we
+intervened to get patients to the ICU faster, would that reduce their
+risk of sepsis?**
 
-In routine care, the treatment is a consequence of many things, such as
-the patients baseline health or prior history. Often, the sickest
-patients get a different treatment than the more healthy one. This is
-called *indication bias* (or confounding by indication): the indication
-for treatment is itself a marker of worse prognosis, so a naive
-comparison of treated and untreated patients mixes up the effect of the
-treatment with the effect of whatever made clinicians choose to treat.
-This is unlike in a randomized trial, who gets the treatment is decided
-by a coin flip.
+Patients are not randomly assigned a delay, though. How quickly a
+patient is escalated to the ICU depends on how sick they already look on
+the ward - and that same underlying sickness independently drives sepsis
+risk. This mismatch, where the reason a patient gets (or doesn't get) a
+treatment is itself tangled up with their prognosis, is called
+*indication bias* (or confounding by indication). It is unlike a
+randomized trial, where who gets the treatment is decided by a coin
+flip.
 
-As a consequence of indication bias, **using predictive models to reason
-on whether or not to assign a treatment, to intervene, is challenging.**
-
-
-Here, we illustrate these challenge, as well as possible solutions
-(though there is no magic bullet).
-Real ICU data has no known "true" treatment effect to check our
-methods against, so here we use real PhysioNet sepsis covariates, but
-simulate the treatment assignment and the outcome ourselves, with a
-treatment effect we fix in advance. This lets us compare every
-estimate to a known ground truth - something we could never do with
-purely real data - while keeping the confounding realistic. 
+Unlike the earlier examples, everything here is real: the delay before
+ICU admission and the sepsis outcome are both taken as recorded, with
+nothing simulated. This means we have no known "true effect" to check
+our answer against - exactly the situation we are in with any real
+observational health data. What we *can* still show is that some ways of
+answering the question are self-contradictory or implausible, and that
+more careful ones at least remove the most obvious contradictions.
 
 |
 
@@ -42,327 +39,230 @@ https://doi.org/10.1146/annurev-biodatasci-103123-095750
 """
 
 # %%
-# Load the data and build a severity score
-# ---------------------------------------------
+# Load the data
+# ---------------
 #
-# We use age and five vitals recorded during the first 24h in the ICU
-# to build a simple severity score: each vital is standardized (so it
-# has mean 0 and standard deviation 1 across patients), then added up,
-# with blood pressure and oxygen saturation counting *against* severity
-# (lower values are worse for those two).
+# We reuse ``hours_before_icu`` from the PhysioNet sepsis data, flipped
+# in sign into ``delay`` (a positive number of hours), together with the
+# real ``sepsis`` outcome and the same vitals used to predict sepsis in
+# example 02.
 
 import pandas as pd
 
 df = pd.read_csv("physionet_sepsis_causal.csv")
-df = df.dropna(subset=[
-    "heart_rate_bpm", "resp_rate", "temp_celsius",
-    "mean_arterial_bp_mmhg", "o2_sat_pct", "age",
-])
-
-
-def standardize(values):
-    return (values - values.mean()) / values.std()
-
-
-fever_or_hypothermia = (df["temp_celsius"] - 37).abs()
-
-severity = (
-    standardize(df["resp_rate"])
-    + standardize(df["heart_rate_bpm"])
-    + standardize(fever_or_hypothermia)
-    - standardize(df["mean_arterial_bp_mmhg"])
-    - standardize(df["o2_sat_pct"])
-    + standardize(df["age"])
-)
-severity = standardize(severity)
-df["severity"] = severity
-
-print(df["severity"].describe())
-
-# %%
-# Simulating an indication-biased treatment
-# ---------------------------------------------
-#
-# We simulate a binary treatment - think of it as an aggressive
-# intervention such as early vasopressor use - whose probability
-# increases with severity: sicker patients are more likely to receive
-# it, exactly as in real practice.
-
-import numpy as np
-
-rng = np.random.RandomState(0)
-
-
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
-
-
-propensity_true = sigmoid(-0.5 + 1.5 * df["severity"])
-treatment = rng.binomial(1, propensity_true)
-df["treatment"] = treatment
-
-print("Fraction treated:", treatment.mean())
-print("Mean severity, treated:", df.loc[treatment == 1, "severity"].mean())
-print("Mean severity, untreated:", df.loc[treatment == 0, "severity"].mean())
-
-# %%
-# Treated patients are, on average, considerably sicker than untreated
-# ones - by construction, but this is exactly the pattern indication
-# bias produces in real data too.
-
-import matplotlib.pyplot as plt
-
-plt.figure()
-plt.hist(df.loc[treatment == 0, "severity"], bins=40, density=True, alpha=0.6, label="untreated")
-plt.hist(df.loc[treatment == 1, "severity"], bins=40, density=True, alpha=0.6, label="treated")
-plt.xlabel("severity score")
-plt.ylabel("density")
-plt.title("Treated patients are sicker than untreated ones")
-plt.legend()
-plt.tight_layout()
-plt.show()
-
-# %%
-# Simulating an outcome with a known treatment effect
-# ---------------------------------------------------------
-#
-# We simulate a continuous outcome - think of it as a 48h organ-failure
-# score, higher is worse - that depends on severity (sicker patients do
-# worse) and on the treatment, with a *fixed, known* effect: the
-# treatment reduces the outcome by exactly 1 point on average. This
-# ``true_effect`` is what every method below is trying to recover.
-
-true_effect = -1.0
-noise = rng.normal(0, 1.0, size=len(df))
-outcome = 2.0 * df["severity"] + true_effect * treatment + noise
-df["outcome"] = outcome
-
-# %%
-# The wrong way: a naive difference in means
-# ===============================================
-#
-# The simplest possible analysis compares the average outcome of
-# treated and untreated patients directly.
-
-naive_effect = df.loc[treatment == 1, "outcome"].mean() - df.loc[treatment == 0, "outcome"].mean()
-print(f"True effect:            {true_effect:+.2f}")
-print(f"Naive difference in means: {naive_effect:+.2f}")
-
-# %%
-# The naive estimate has the *wrong sign*: it suggests the treatment is
-# harmful, when by construction it is beneficial. This is not a subtle
-# statistical error - it is the direct consequence of comparing two
-# groups that were never comparable to begin with: the treated group is
-# sicker, and sicker patients do worse regardless of treatment.
-
-# %%
-# Counterfactual reasoning: G-formula
-# ========================================
-#
-# The idea behind the G-formula (also called "outcome regression") is
-# to model the outcome from the covariates *and* the treatment, then
-# ask the model to predict the outcome for every patient twice: once as
-# if they had been treated, and once as if they had not. Averaging the
-# difference between these two counterfactual predictions gives an
-# estimate of the treatment effect, adjusted for how the covariates
-# relate to both treatment and outcome.
-
 covariate_columns = [
     "age", "sex", "heart_rate_bpm", "resp_rate", "temp_celsius",
     "mean_arterial_bp_mmhg", "o2_sat_pct", "wbc_count", "creatinine_mgdl",
 ]
+df = df.dropna(subset=covariate_columns + ["hours_before_icu"])
+df["delay"] = -df["hours_before_icu"]
 
-X = df[covariate_columns].copy()
-X["treatment"] = df["treatment"]
-y = df["outcome"]
-
-from sklearn.model_selection import train_test_split
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
-
-
-def g_formula_effect(fitted_pipeline, X_all):
-    X_treated = X_all.copy()
-    X_treated["treatment"] = 1
-    X_untreated = X_all.copy()
-    X_untreated["treatment"] = 0
-    predicted_treated = fitted_pipeline.predict(X_treated)
-    predicted_untreated = fitted_pipeline.predict(X_untreated)
-    return (predicted_treated - predicted_untreated).mean()
-
+print(df[["delay", "sepsis"]].describe())
 
 # %%
-# The challenge of model selection
-# -------------------------------------
+# The raw pattern: sepsis rate across the delay before ICU admission
+# -------------------------------------------------------------------
 #
-# There is no shortage of models we could use for the outcome
-# regression. We try four, from the simplest to the most flexible, and
-# for each one we report two very different things: how well it
-# predicts the *observed* outcome (a held-out R2, the usual way to pick
-# a model), and what treatment effect it implies through the G-formula.
+# We split patients into ten equal-sized groups (deciles) of ``delay``,
+# and look at the observed sepsis rate in each group.
 
-from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import r2_score
-from sklearn.tree import DecisionTreeRegressor
+df["delay_decile"] = pd.qcut(df["delay"], 10, duplicates="drop")
+rate_by_decile = df.groupby("delay_decile", observed=True)[["delay", "sepsis"]].mean()
+print(rate_by_decile)
+
+import matplotlib.pyplot as plt
+
+plt.figure()
+plt.plot(rate_by_decile["delay"], rate_by_decile["sepsis"], marker="o")
+plt.xlabel("hours before ICU admission")
+plt.ylabel("observed sepsis rate")
+plt.title("Sepsis rate is not a simple function of admission delay")
+plt.tight_layout()
+plt.show()
+
+# %%
+# The pattern is not what a simple "the longer the delay, the worse"
+# story would predict: sepsis rate is elevated for the *longest* delays,
+# dips for intermediate ones, and rises sharply again for patients
+# admitted to the ICU almost immediately. Before jumping to conclusions
+# about cause and effect, we should ask whether this pattern reflects
+# what delay *does* to patients, or simply reflects *who* ends up with
+# each delay.
+
+# %%
+# The naive way: comparing patients admitted quickly to those admitted slowly
+# =================================================================================
+#
+# The simplest possible analysis to answer "does a shorter delay reduce
+# sepsis risk" is to split patients into "fast" and "slow" groups around
+# some cutoff, and compare their sepsis rates directly - the equivalent
+# of a difference in means for a continuous exposure.
+
+thresholds = [3, 12, 24]
+
+naive_estimates = []
+for threshold in thresholds:
+    fast = df["delay"] <= threshold
+    rate_fast = df.loc[fast, "sepsis"].mean()
+    rate_slow = df.loc[~fast, "sepsis"].mean()
+    naive_estimates.append(rate_fast - rate_slow)
+    print(
+        f"cutoff={threshold:2d}h   "
+        f"sepsis rate if fast={rate_fast:.4f}   "
+        f"sepsis rate if slow={rate_slow:.4f}   "
+        f"naive difference={rate_fast - rate_slow:+.4f}"
+    )
+
+# %%
+# The naive estimate does not just look biased - it is not even stable.
+# With a 3h cutoff, "fast" patients look *worse off* than "slow" ones.
+# With a 24h cutoff, the sign flips: "fast" patients now look *better
+# off*. A real effect of shortening delay should not change sign
+# depending on where we happen to draw an arbitrary line. This instability
+# is itself strong evidence that the naive comparison is not measuring a
+# causal effect of delay, but rather picking up who ends up in each
+# group.
+#
+# The clinical intuition matches this: patients rushed straight to the
+# ICU are often recognized as critically ill from the very first minute,
+# which drives risk up on its own; patients left on the ward a long time
+# may be exactly those whose deterioration was harder to catch early.
+# Both patterns tangle up "how fast a patient reached the ICU" with "how
+# sick they already were" - indication bias, acting in both directions
+# at once.
+
+# %%
+# Adjusting with a predictive model - but the model has to be flexible enough
+# ==================================================================================
+#
+# Rather than collapsing delay into two groups, we can model sepsis
+# from the vitals *and* the delay, then ask the model to predict sepsis
+# risk for every patient at several hypothetical delays, keeping their
+# own vitals fixed. Averaging these counterfactual predictions traces
+# out a *dose-response curve*: what sepsis risk would look like, patient
+# by patient, if delay had been some given value instead of what it
+# actually was. This is the same idea as the G-formula in the earlier
+# version of this example, now applied to a continuous exposure - and it
+# is exactly the ``partial_dependence`` tool used in examples 03 and 04.
+
+import numpy as np
+from sklearn.inspection import partial_dependence
+from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
 from skrub import tabular_pipeline
 
-model_names = ["linear regression", "shallow tree", "random forest", "gradient boosting"]
-model_estimators = [
-    LinearRegression(),
-    DecisionTreeRegressor(max_depth=3, random_state=0),
-    RandomForestRegressor(n_estimators=200, max_depth=8, random_state=0),
-    HistGradientBoostingRegressor(random_state=0),
-]
+X = df[covariate_columns].copy()
+X["delay"] = df["delay"]
+y = df["sepsis"]
 
-results = []
-for i in range(len(model_names)):
-    pipeline = tabular_pipeline(model_estimators[i])
-    pipeline.fit(X_train, y_train)
+delay_grid = np.linspace(0, 300, 40)
 
-    predicted_test = pipeline.predict(X_test)
-    held_out_r2 = r2_score(y_test, predicted_test)
-    g_formula_ate = g_formula_effect(pipeline, X)
+model_linear = tabular_pipeline(LogisticRegression(max_iter=1000))
+model_linear.fit(X, y)
+pd_linear = partial_dependence(model_linear, X, features=["delay"], custom_values={0: delay_grid})
 
-    results.append({
-        "model": model_names[i],
-        "held_out_r2": held_out_r2,
-        "g_formula_ate": g_formula_ate,
-    })
+model_flexible = tabular_pipeline(HistGradientBoostingClassifier(random_state=0))
+model_flexible.fit(X, y)
+pd_flexible = partial_dependence(model_flexible, X, features=["delay"], custom_values={0: delay_grid})
 
-results = pd.DataFrame(results)
-print(results.to_string(index=False))
-print(f"\nTrue effect: {true_effect:+.2f}")
-print(f"Naive difference in means: {naive_effect:+.2f}")
-
-# %%
-# Random forest and linear regression reach a similar held-out R2, yet
-# their G-formula estimates are nowhere close to each other: one of
-# them recovers a treatment effect not far from the truth, the other
-# estimates an effect close to zero. Predictive accuracy on the
-# observed outcome does not tell us which model to trust for the
-# causal question - exactly the point made by Doutreligne and
-# Varoquaux: good prediction and good causal estimation are different
-# goals, and optimizing for one does not guarantee the other.
-#
-# The gradient boosting model happens to combine strong held-out
-# prediction with a G-formula estimate close to the true effect - but
-# the prediction score alone cannot garantee this.
-#
-# **Reference** Doutreligne and Varoquaux (2025), "How to select
-# predictive models for decision-making or causal inference",
-# GigaScience, which shows that a model's *predictive* accuracy does not
-# tell you how good it will be at estimating a *causal* effect.
-# https://doi.org/10.1093/gigascience/giaf016
+plt.figure()
+plt.plot(
+    rate_by_decile["delay"], rate_by_decile["sepsis"],
+    color="black", linestyle="--", marker="o", markersize=4, label="raw observed rate",
+)
+plt.plot(pd_linear["grid_values"][0], pd_linear["average"][0], label="adjusted, logistic regression")
+plt.plot(pd_flexible["grid_values"][0], pd_flexible["average"][0], label="adjusted, gradient boosting")
+plt.xlabel("hours before ICU admission")
+plt.ylabel("sepsis rate / predicted sepsis probability")
+plt.title("Adjusting for vitals: the model's flexibility changes the answer")
+plt.legend()
+plt.tight_layout()
+plt.show()
 
 # %%
-# Inverse probability weighting
-# ==================================
+# The naive, linear adjustment is almost featureless: it suggests sepsis
+# risk creeps up only slowly and smoothly with delay, missing the
+# elevated risk of immediate admissions entirely. Used to guide policy,
+# it would suggest there is nothing urgent about patients rushed straight
+# to the ICU - exactly the group the raw data flags as highest-risk.
 #
-# A different strategy models the *treatment* rather than the outcome:
-# for each patient, estimate their probability of being treated given
-# their covariates (their "propensity score"), then reweight patients
-# by the inverse of that probability. This corrects for the fact that
-# sicker patients are over-represented among the treated.
+# The flexible model, adjusting for the same vitals, tells a more
+# nuanced story: risk for the very long delays drops noticeably once we
+# account for how sick these patients' vitals already were, but the risk
+# for immediate admissions barely moves. In other words, our six vitals
+# explain away part of why long delays look risky, but not why immediate
+# admissions do. This does *not* prove shortening delay would help
+# these patients - it only shows that whatever elevates their risk is
+# not (fully) captured by the vitals we adjusted for. A linear model
+# would never have revealed this distinction at all.
+#
+# This mirrors the exact lesson from examples 03 and 04: a model that
+# cannot represent a non-linear relationship will get it wrong, silently.
+# Here the stakes are higher than prediction accuracy - a wrong model
+# leads to a wrong policy conclusion.
 
-from sklearn.ensemble import HistGradientBoostingClassifier
+# %%
+# A second opinion: inverse probability weighting
+# =====================================================
+#
+# A different strategy models *who becomes "fast" or "slow"* rather than
+# the outcome. We reuse the 3h cutoff from the naive comparison above,
+# and estimate each patient's probability of falling in the "fast"
+# group from their vitals - their propensity score - then reweight
+# patients by the inverse of that probability, so that comparable "fast"
+# and "slow" patients count for more.
+
+df["fast"] = (df["delay"] <= 3).astype(int)
 
 propensity_pipeline = tabular_pipeline(HistGradientBoostingClassifier(random_state=0))
-propensity_pipeline.fit(df[covariate_columns], df["treatment"])
+propensity_pipeline.fit(df[covariate_columns], df["fast"])
 propensity_score = propensity_pipeline.predict_proba(df[covariate_columns])[:, 1]
 propensity_score = np.clip(propensity_score, 0.02, 0.98)
 
-# %%
-# Before using these propensity scores, we check *overlap*: treated and
-# untreated patients should have overlapping ranges of propensity
-# scores. If some patients are almost never treated, or almost always
-# treated, there is not enough information to compare them, no matter
-# how clever the method.
-
 plt.figure()
-plt.hist(propensity_score[treatment == 0], bins=40, density=True, alpha=0.6, label="untreated")
-plt.hist(propensity_score[treatment == 1], bins=40, density=True, alpha=0.6, label="treated")
-plt.xlabel("estimated propensity score")
+plt.hist(propensity_score[df["fast"] == 0], bins=40, density=True, alpha=0.6, label="slow")
+plt.hist(propensity_score[df["fast"] == 1], bins=40, density=True, alpha=0.6, label="fast")
+plt.xlabel("estimated propensity of being admitted fast")
 plt.ylabel("density")
-plt.title("Overlap between treated and untreated propensity scores")
+plt.title("Overlap between the fast and slow groups' propensity scores")
 plt.legend()
 plt.tight_layout()
 plt.show()
 
 # %%
-# The two distributions overlap substantially, though treated patients
-# skew towards higher propensity scores, as expected. This is enough
-# overlap for inverse probability weighting to be meaningful.
+# The two distributions overlap substantially, though "fast" patients
+# skew towards higher propensity scores, as expected: our vitals do
+# carry *some* information about who ends up admitted quickly, just not
+# a lot.
 
+naive_3h = df.loc[df["fast"] == 1, "sepsis"].mean() - df.loc[df["fast"] == 0, "sepsis"].mean()
 ipw_effect = np.mean(
-    treatment * df["outcome"] / propensity_score
-    - (1 - treatment) * df["outcome"] / (1 - propensity_score)
+    df["fast"] * df["sepsis"] / propensity_score
+    - (1 - df["fast"]) * df["sepsis"] / (1 - propensity_score)
 )
-print(f"True effect:                   {true_effect:+.2f}")
-print(f"Naive difference in means:     {naive_effect:+.2f}")
-print(f"Inverse probability weighting: {ipw_effect:+.2f}")
+print(f"Naive difference (3h cutoff):    {naive_3h:+.4f}")
+print(f"Inverse probability weighting:   {ipw_effect:+.4f}")
 
 # %%
-# Doubly robust estimation
-# =============================
+# Weighting shrinks the estimate a little, but nowhere near to zero: it
+# only partially agrees with the naive comparison. This is an important,
+# easy to miss limitation of adjustment: it can only correct for
+# confounding that is both measured *and* strong enough for a model to
+# detect in the covariates we give it. Here, whatever decides how fast a
+# patient reaches the ICU - ward staffing at that hour, how the case
+# presented, hospital protocol - is only partly visible to the six
+# vitals we used, so a meaningful part of the naive gap survives even
+# after weighting.
 #
-# Doubly robust estimators combine an outcome model and a propensity
-# model: they start from the G-formula estimate, then add a correction
-# term, weighted by the inverse propensity score, for how wrong the
-# outcome model was on the patients actually observed. The appeal is
-# that the estimate stays valid if *either* the outcome model or the
-# propensity model is reasonable - not necessarily both.
-
-outcome_pipeline = tabular_pipeline(HistGradientBoostingRegressor(random_state=0))
-outcome_pipeline.fit(X, y)
-
-X_treated_all = X.copy()
-X_treated_all["treatment"] = 1
-X_untreated_all = X.copy()
-X_untreated_all["treatment"] = 0
-predicted_if_treated = outcome_pipeline.predict(X_treated_all)
-predicted_if_untreated = outcome_pipeline.predict(X_untreated_all)
-
-doubly_robust_terms = (
-    predicted_if_treated - predicted_if_untreated
-    + treatment * (df["outcome"] - predicted_if_treated) / propensity_score
-    - (1 - treatment) * (df["outcome"] - predicted_if_untreated) / (1 - propensity_score)
-)
-doubly_robust_effect = doubly_robust_terms.mean()
-
-# %%
-# Putting all the estimates side by side against the true effect shows
-# how much a careless analysis can mislead, and how much closer the
-# methods designed for causal questions get.
-
-summary = pd.DataFrame({
-    "method": [
-        "true effect", "naive difference in means", "inverse probability weighting",
-        "G-formula (gradient boosting)", "doubly robust",
-    ],
-    "estimated_effect": [
-        true_effect, naive_effect, ipw_effect,
-        results.loc[results["model"] == "gradient boosting", "g_formula_ate"].iloc[0],
-        doubly_robust_effect,
-    ],
-})
-print(summary.to_string(index=False))
-
-plt.figure()
-plt.barh(summary["method"], summary["estimated_effect"])
-plt.axvline(true_effect, color="black", linestyle="--", label="true effect")
-plt.xlabel("estimated treatment effect")
-plt.legend()
-plt.tight_layout()
-plt.show()
-
-# %%
-# Every method that accounts for indication bias - inverse probability
-# weighting, the G-formula, and the doubly robust estimator - correctly
-# identifies the treatment as beneficial, and lands much closer to the
-# true effect than the naive comparison. None of them needed to know
-# the true propensity or outcome model: they only needed a rich enough
-# set of covariates to capture what drove the clinicians' decision to
-# treat. Had we omitted the vitals that make up our severity score,
-# none of these methods could have corrected for the bias - adjustment
-# can only compensate for confounding that is actually measured.
+# Put together with the dose-response curves above, the honest
+# conclusion is not "we have found the true effect of delay on sepsis".
+# It is that the naive comparison is self-contradictory, that a flexible
+# outcome model uncovers structure a linear one cannot see, and that our
+# adjustment - by any method - is only as good as the confounders we
+# actually measured. This is precisely the challenge described in
+# Doutreligne and Varoquaux (2025), "How to select predictive models for
+# decision-making or causal inference", GigaScience:
+# https://doi.org/10.1093/gigascience/giaf016 - predictive accuracy on
+# the observed outcome does not, by itself, tell us which model to trust
+# for a causal question, and with real data we rarely get to check our
+# answer against a known ground truth at all.
