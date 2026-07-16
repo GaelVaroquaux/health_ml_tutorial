@@ -67,6 +67,18 @@ html_sidebars = {
     "index": [],
 }
 
+# ---------------------------------------------------------------------------
+# Configuration for intersphinx
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy", None),
+    "matplotlib": ("https://matplotlib.org/stable", None),
+    "sklearn": ("https://scikit-learn.org/stable", None),
+    "pandas": ("http://pandas.pydata.org/pandas-docs/stable", None),
+    "seaborn": ("http://seaborn.pydata.org", None),
+}
+
 # -- Options for HTML output -------------------------------------------------
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
