@@ -141,10 +141,32 @@ plt.show()
 # whether the event happened (``event``), and for how long they were
 # observed (``duration``) - censored or not.
 
+# %%
+# A 'y' target that exposes censoring
+# -----------------------------------
+#
+# We build 'y' vector that is specific to censoring models, exposing both
+# the duration and if the event we're interesting (death, here) is
+# observed or not after this duration.
+
 y = pd.DataFrame({
     "event": is_dead.astype(int),
     "duration": duration,
 })
+
+# %%
+# This two-column ``y`` is exactly the format ``SurvivalBoost`` (used
+# below) expects: a dataframe with columns named ``"event"`` and
+# ``"duration"``, ``"event"`` being 0 for a censored participant and a
+# positive integer for an observed event. Passing ``y`` this way, instead
+# of ``duration`` alone, is precisely what tells the model which
+# participants are censored - it never sees an exact time of death for
+# them, only that they were still alive at their recorded ``duration``.
+# ``duration`` itself plays a double role depending on ``event``: for a
+# death, it is the exact time to death; for a censored participant, it is
+# only a lower bound on their (unknown) true time to death - the model
+# has to treat these two cases differently, and ``event`` is what lets
+# it tell them apart.
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=0
