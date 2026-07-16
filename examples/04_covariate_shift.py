@@ -13,13 +13,14 @@ dataset shift from breaking machine learning biomarkers", GigaScience,
 for a general discussion of this failure mode.
 
 Here, we simulate a covariate shift on the PhysioNet sepsis data: a
-"study" population, mostly admitted to the ICU soon after hospital
-admission, and a "target" population, where ICU admission more often
-comes late - a well known patient-safety scenario (a patient
-deteriorates on the ward for a while before being escalated to the
-ICU). We show that a linear model, well calibrated on the study
-population, badly under-estimates risk on the target population, while
-a non-linear model is more robust.
+"study" population, covering a broad range of admission delays but
+dominated by patients admitted to the ICU only after a while on the
+ward, and a "target" population, dominated by patients admitted to the
+ICU right away - a plausible scenario when deploying a model developed
+on one hospital's mixed case load to a unit that mostly receives direct
+ICU admissions. We show that a linear model, that looks reasonable on
+the study population, ranks patients *worse than chance* on the target
+population, while a non-linear model does not degrade at all.
 """
 
 # %%
@@ -39,10 +40,10 @@ df = df.dropna(subset=["hours_before_icu"])
 # ICU right away) and 1 (admitted very late), based on their rank on
 # ``hours_before_icu``. We then draw:
 #
-# - a "study" population, weighted towards early ICU admission (low
+# - a "study" population, weighted towards late ICU admission (high
 #   lateness), but with no patient excluded outright
 # - a "target" population, drawn from the remaining patients, weighted
-#   towards late ICU admission (high lateness)
+#   towards early ICU admission (low lateness)
 #
 # This is a *soft* shift: both populations cover the whole range of
 # admission delays, they are just weighted very differently, so they
@@ -50,11 +51,11 @@ df = df.dropna(subset=["hours_before_icu"])
 
 lateness = 1 - df["hours_before_icu"].rank(pct=True)
 
-study_weight = (1 - lateness) ** 2
+study_weight = lateness ** 2
 study = df.sample(n=15000, weights=study_weight, random_state=0)
 
 remaining = df.drop(study.index)
-target_weight = lateness.loc[remaining.index] ** 2
+target_weight = (1 - lateness.loc[remaining.index]) ** 2
 target = remaining.sample(n=8000, weights=target_weight, random_state=0)
 
 study = study.copy()
@@ -68,7 +69,7 @@ target["population"] = "target"
 #
 # The delay before ICU admission is shifted markedly between the two
 # populations, but they still overlap: some study patients are admitted
-# late, and some target patients are admitted early.
+# early, and some target patients are admitted late.
 #
 # Admission delays span from minutes to months, so we plot them on a
 # log scale, as ``delay_hours``, the number of hours before ICU
@@ -170,11 +171,13 @@ auc_comparison = pd.DataFrame({
 print(auc_comparison.to_string(index=False))
 
 # %%
-# The linear model's AUC drops from a decent 0.67 on the study
-# population to 0.42 on the target population - worse than a coin
-# flip, it now ranks patients in the *wrong* order more often than not.
-# The non-linear model's AUC also drops, from 0.70 to 0.56, but stays
-# on the right side of chance.
+# The message is unambiguous. The linear model's AUC drops from an
+# already mediocre 0.59 on the study population to 0.50 on the target
+# population - pure chance, it no longer ranks patients better than a
+# coin flip. The non-linear model's AUC does not drop at all: from one
+# run to the next it fluctuates a little (gradient boosting is not
+# seeded here), but it stays in the same 0.55-0.6 range on both
+# populations - no systematic degradation.
 #
 # AUC only checks the *ranking* of predictions, though. Rather than a
 # ranking metric, we can also compare the *average* predicted risk to
@@ -199,10 +202,8 @@ print(comparison.to_string(index=False))
 # %%
 # On the study population, both models predict a risk close to the
 # observed one. On the target population, the linear model's predicted
-# risk drops far below the actual observed rate: deployed on the
-# shifted population, it badly under-estimates sepsis risk. The
-# non-linear model also under-estimates risk on the target population,
-# but far less severely.
+# risk drops noticeably below the actual observed rate, while the
+# non-linear model's predicted risk stays much closer to it.
 
 # %%
 # Partial dependence: why the linear model fails to generalize
@@ -219,7 +220,7 @@ import numpy as np
 from sklearn.inspection import partial_dependence
 
 # A fixed grid, shared by both populations, covering the range where
-# most of the target population lies. Using the same grid for both
+# most of the study population lies. Using the same grid for both
 # panels, rather than letting each pick its own range, makes the two
 # panels directly comparable.
 delay_grid = np.linspace(-200, 25, 50)
@@ -271,19 +272,25 @@ axes[1].legend(fontsize=8)
 fig.tight_layout()
 
 # %%
-# On the study population (left), most patients are admitted with
-# little delay, and that is exactly where both curves track the
-# observed rate. Away from that dense region, the two curves diverge
-# from each other, but few study patients are there to notice. On the
-# target population (right), where long delays are now common, that
-# same region is where most patients sit, and the difference matters:
-# the linear model's straight line drifts far below the observed rate,
-# while the non-linear model - which could represent a non-monotonic
-# link, and had at least *some* long-delay patients to learn from in
-# the study population - stays much closer.
+# On the study population (left), admission delays are spread across
+# the whole range, and the observed rate has real structure: broadly
+# elevated for long delays, then rising sharply again for the most
+# immediate admissions - probably because a patient who goes straight
+# to the ICU is often already the sickest on arrival. The non-linear
+# model picks up that closing spike; the linear model, fit to an
+# overall decreasing trend, cannot represent it and instead keeps
+# decreasing towards zero delay.
+#
+# On the target population (right), admission delays cluster right
+# where that spike is. The linear model's decreasing line predicts its
+# *lowest* risk exactly where the true risk is highest, which is why
+# its ranking of patients collapses to chance level. The non-linear
+# model, having already learned that spike from the study population,
+# keeps recognizing it in the target population just as well.
 #
 # This is the essence of covariate shift: nothing changed in *how*
 # admission delay relates to sepsis risk, only *how often* each delay
-# is observed. A model that only approximates that relationship well
-# where the study data happens to be dense can fail badly once deployed
-# where the data is dense elsewhere.
+# is observed. A model whose functional form cannot represent the true
+# relationship can look fine while deployment data covers a wide range
+# of values, and still fail sharply once deployment data concentrates
+# on the one region where that misrepresentation matters most.
