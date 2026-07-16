@@ -2,6 +2,17 @@ div.sphx-glr-download-link-note {
     display: none;
 }
 
+/* Enable thumbnails to take only part of the width */
+.sphx-glr-thumbnails {
+  width: unset; 
+  margin: 0px 0px 20px 0px;
+
+}
+
+div.sidebar, aside.sidebar {
+    width: 30ex;
+}
+
 /* Hide-on-scroll-down / show-on-scroll-up for the top navbar */
 .bd-header {
     position: sticky;
