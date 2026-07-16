@@ -32,6 +32,13 @@ extensions = [
     "jupyterlite_sphinx",
 ]
 
+try:
+    import sphinxext.opengraph  # noqa: F401
+except ImportError:
+    pass
+else:
+    extensions.append("sphinxext.opengraph")
+
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
@@ -63,6 +70,11 @@ html_sidebars = {
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 docstitle = "Health ML tutorial"
+html_baseurl = "https://gaelvaroquaux.github.io/health_ml_tutorial/"
+
+ogp_site_url = html_baseurl
+ogp_site_name = project
+ogp_enable_meta_description = True
 
 html_theme_options = {
     "github_url": "https://github.com/GaelVaroquaux/health_ml_tutorial",
