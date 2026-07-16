@@ -35,8 +35,9 @@ extensions = [
 try:
     import sphinxext.opengraph  # noqa: F401
 except ImportError:
-    pass
+    _has_sphinxext_opengraph = False
 else:
+    _has_sphinxext_opengraph = True
     extensions.append("sphinxext.opengraph")
 
 templates_path = ["_templates"]
@@ -72,9 +73,10 @@ html_static_path = ["_static"]
 docstitle = "Health ML tutorial"
 html_baseurl = "https://gaelvaroquaux.github.io/health_ml_tutorial"
 
-ogp_site_url = html_baseurl
-ogp_site_name = project
-ogp_enable_meta_description = True
+if _has_sphinxext_opengraph:
+    ogp_site_url = html_baseurl
+    ogp_site_name = project
+    ogp_enable_meta_description = True
 
 html_theme_options = {
     "github_url": "https://github.com/GaelVaroquaux/health_ml_tutorial",
