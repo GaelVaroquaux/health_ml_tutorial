@@ -28,6 +28,7 @@ release = "0.1"
 # JupyterLite is built. The config-inited ordering is handled by explicit
 # priorities inside sphinx-gallery and does not depend on this order.
 extensions = [
+    "sphinx.ext.intersphinx",
     "sphinx_gallery.gen_gallery",
     "jupyterlite_sphinx",
 ]
