@@ -1,13 +1,17 @@
 """
-Survival analysis: accounting for censoring
-==============================================
+Survival and time-to-event: accounting for censoring
+======================================================
 
-The NHANES mortality data is a *time-to-event* dataset: for each
-participant we know ``months_in_study`` (their follow-up duration) and
-``event`` (whether they died, or were still alive - "censored" - at the
-end of follow-up). Participants enrolled towards the end of the study
-simply have not been followed long enough to know if or when they will
-die: their true time to death is unknown, only a lower bound on it.
+In the NHANES mortality data participant we know ``months_in_study``
+(their follow-up duration) and ``event`` (whether they died, or were
+still alive - "censored" - at the end of follow-up). We can use it in a
+*time-to-event* question, studying the time people live, ie a *survival*
+question.
+
+And yet, there is a challenge: censoring. Participants enrolled towards
+the end of the study simply have not been followed long enough to know if
+or when they will die: their true time to death is unknown, only a lower
+bound on it.
 
 We first show what goes wrong if this censoring is ignored: predicting
 "time to death" using only the participants who died. We then show how
@@ -24,6 +28,13 @@ import pandas as pd
 
 df = pd.read_csv("nhanes_1999_2018_mortality.csv")
 
+# %%
+# A quick glance at the data
+from skrub import TableReport
+TableReport(df)
+
+# %%
+# Our covariates and target
 X = df.drop(columns=["participant_id", "cycle", "months_in_study", "event"])
 duration = df["months_in_study"]
 is_dead = df["event"] == "deceased"
@@ -31,6 +42,8 @@ is_dead = df["event"] == "deceased"
 print("Number of participants:", len(df))
 print("Deaths observed:", is_dead.sum())
 print("Still alive at the end of follow-up (censored):", (~is_dead).sum())
+
+
 
 # %%
 # The wrong way: dropping the censored participants
@@ -57,7 +70,7 @@ naive_model.fit(X_dead_train, duration_dead_train)
 
 # %%
 # Evaluated the usual way, on a held-out set of participants who also
-# died, this model looks reasonable enough.
+# died, this model looks reasonable.
 
 from sklearn.metrics import mean_absolute_error, r2_score
 
@@ -102,7 +115,7 @@ plt.figure()
 plt.hist(predicted_censored, bins=50, density=True, alpha=0.6,
          label="predicted time to death")
 plt.hist(already_survived, bins=50, density=True, alpha=0.6,
-         label="months already survived (known lower bound)")
+         label="months already survived\n(known lower bound)")
 plt.xlabel("months")
 plt.ylabel("density")
 plt.title("A model trained on deaths only, applied to censored participants")
