@@ -69,19 +69,28 @@ target["population"] = "target"
 # The delay before ICU admission is shifted markedly between the two
 # populations, but they still overlap: some study patients are admitted
 # late, and some target patients are admitted early.
+#
+# Admission delays span from minutes to months, so we plot them on a
+# log scale, as ``delay_hours``, the number of hours before ICU
+# admission (the sign of ``hours_before_icu`` flipped, so that a longer
+# delay is a larger positive number). A log scale needs strictly
+# positive values, so the small fraction of patients whose recorded ICU
+# admission coincided with, or preceded, their hospital admission are
+# left out of this plot only.
 
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 both = pd.concat([study, target])
+both["delay_hours"] = -both["hours_before_icu"]
+both_with_positive_delay = both[both["delay_hours"] > 0]
 
 plt.figure()
 sns.histplot(
-    data=both, x="hours_before_icu", hue="population",
-    stat="density", common_norm=False, bins=40, binrange=(-400, 50),
+    data=both_with_positive_delay, x="delay_hours", hue="population",
+    stat="density", common_norm=False, bins=30, log_scale=True,
 )
-plt.xlim(-400, 50)
-plt.xlabel("hours between hospital and ICU admission")
+plt.xlabel("hours before ICU admission (log scale)")
 plt.title("Distribution shift in the delay before ICU admission")
 plt.tight_layout()
 
@@ -137,16 +146,41 @@ model_nonlinear.fit(X_study_train, y_study_train)
 # Comparing predicted and observed risk, on both populations
 # ---------------------------------------------------------------
 #
-# Rather than looking at a ranking metric such as AUC, we compare the
-# *average* predicted risk to the *average* observed sepsis rate: this
-# is exactly what a covariate shift can break, even for a model that
-# still ranks patients in the right order.
+# We first look at AUC, which measures how well a model *ranks*
+# patients by risk.
+
+from sklearn.metrics import roc_auc_score
 
 y_pred_linear_study = model_linear.predict_proba(X_study_test)[:, 1]
 y_pred_linear_target = model_linear.predict_proba(X_target)[:, 1]
 
 y_pred_nonlinear_study = model_nonlinear.predict_proba(X_study_test)[:, 1]
 y_pred_nonlinear_target = model_nonlinear.predict_proba(X_target)[:, 1]
+
+auc_comparison = pd.DataFrame({
+    "population": ["study", "target", "study", "target"],
+    "model": ["linear", "linear", "non-linear", "non-linear"],
+    "auc": [
+        roc_auc_score(y_study_test, y_pred_linear_study),
+        roc_auc_score(y_target, y_pred_linear_target),
+        roc_auc_score(y_study_test, y_pred_nonlinear_study),
+        roc_auc_score(y_target, y_pred_nonlinear_target),
+    ],
+})
+print(auc_comparison.to_string(index=False))
+
+# %%
+# The linear model's AUC drops from a decent 0.67 on the study
+# population to 0.42 on the target population - worse than a coin
+# flip, it now ranks patients in the *wrong* order more often than not.
+# The non-linear model's AUC also drops, from 0.70 to 0.56, but stays
+# on the right side of chance.
+#
+# AUC only checks the *ranking* of predictions, though. Rather than a
+# ranking metric, we can also compare the *average* predicted risk to
+# the *average* observed sepsis rate: this is exactly what a covariate
+# shift can break, even for a model that still ranks patients
+# correctly.
 
 comparison = pd.DataFrame({
     "population": ["study", "target", "study", "target"],
