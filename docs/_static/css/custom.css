@@ -4,8 +4,10 @@ div.sphx-glr-download-link-note {
 
 /* Enable thumbnails to take only part of the width on screen not too
  * small */
-@media screen and (max-width: 600px) .sphx-glr-thumbnails {
-  width: unset !important;
+@media screen and (min-width: 600px) {
+    .sphx-glr-thumbnails {
+        width: unset !important;
+    }
 }
 
 div.sidebar, aside.sidebar {
