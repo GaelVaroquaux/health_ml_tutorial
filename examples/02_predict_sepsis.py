@@ -198,6 +198,7 @@ plt.ylabel("predicted probability of sepsis")
 plt.title("Dependency on admission delay - linear model")
 plt.legend(fontsize=8)
 plt.tight_layout()
+plt.show()
 
 # %%
 # The non-linear model instead traces a bumpy, non-monotonic curve. It is likely
@@ -241,3 +242,4 @@ plt.ylabel("predicted probability of sepsis")
 plt.title("Dependency on admission delay - non linear model")
 plt.legend(fontsize=8)
 plt.tight_layout()
+plt.show()

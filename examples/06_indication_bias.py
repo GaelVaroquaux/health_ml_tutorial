@@ -124,6 +124,7 @@ plt.ylabel("density")
 plt.title("Treated patients are sicker than untreated ones")
 plt.legend()
 plt.tight_layout()
+plt.show()
 
 # %%
 # Simulating an outcome with a known treatment effect
@@ -284,6 +285,7 @@ plt.ylabel("density")
 plt.title("Overlap between treated and untreated propensity scores")
 plt.legend()
 plt.tight_layout()
+plt.show()
 
 # %%
 # The two distributions overlap substantially, though treated patients
@@ -350,6 +352,7 @@ plt.axvline(true_effect, color="black", linestyle="--", label="true effect")
 plt.xlabel("estimated treatment effect")
 plt.legend()
 plt.tight_layout()
+plt.show()
 
 # %%
 # Every method that accounts for indication bias - inverse probability

@@ -76,6 +76,7 @@ plt.ylabel("AUC")
 plt.title("A single decision tree: under-fitting to over-fitting")
 plt.legend()
 plt.tight_layout()
+plt.show()
 
 # %%
 # On the left (small ``max_depth``), the tree is too rigid: it cannot
@@ -134,6 +135,7 @@ for i in range(3):
 
 axes[0].set_ylabel("predicted probability of sepsis")
 fig.tight_layout()
+plt.show()
 
 # %%
 # The under-fit tree can only ask one yes/no question, so it collapses
@@ -171,6 +173,7 @@ plt.ylabel("Test AUC")
 plt.title("Averaging many trees is far more robust to over-fitting")
 plt.legend()
 plt.tight_layout()
+plt.show()
 
 # %%
 # The random forest's test performance drops much more gently at large
@@ -210,6 +213,7 @@ plt.ylabel("AUC")
 plt.title("A depth-4 tree: over-fitting shrinks as training data grows")
 plt.legend()
 plt.tight_layout()
+plt.show()
 
 # %%
 # With only 200 training patients, this same depth-4 tree is actively

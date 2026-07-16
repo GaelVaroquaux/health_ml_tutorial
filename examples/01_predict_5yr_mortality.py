@@ -169,6 +169,7 @@ plt.ylabel("predicted probability of death within 5 years")
 plt.title("Partial dependence of age, by sex - linear model")
 plt.legend()
 plt.tight_layout()
+plt.show()
 
 # %%
 # What we see is that the model appears a bit as a "smoother" compared to the
@@ -209,6 +210,7 @@ plt.ylabel("predicted probability of death within 5 years")
 plt.title("Partial dependence of age, by sex - non-linear model")
 plt.legend()
 plt.tight_layout()
+plt.show()
 
 
 # %%
@@ -253,6 +255,7 @@ plt.ylabel("predicted probability of death within 5 years")
 plt.title("Partial dependence of age, by race/ethnicity")
 plt.legend(fontsize=8)
 plt.tight_layout()
+plt.show()
 
 # %%
 # Partial dependence of age, by education
@@ -310,6 +313,7 @@ plt.ylabel("predicted probability of death within 5 years")
 plt.title("Partial dependence of age, by education")
 plt.legend(fontsize=8)
 plt.tight_layout()
+plt.show()
 
 # %%
 # 2D partial dependence: age and waist circumference
@@ -331,4 +335,5 @@ ax.set_xlabel("age")
 ax.set_ylabel("waist circumference (cm)")
 ax.set_title("Partial dependence of age and waist circumference")
 fig.tight_layout()
+plt.show()
 

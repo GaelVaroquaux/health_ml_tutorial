@@ -121,6 +121,7 @@ plt.ylabel("density")
 plt.title("A model trained on deaths only, applied to censored participants")
 plt.legend()
 plt.tight_layout()
+plt.show()
 
 # %%
 # This is not a fluke of this particular model: it follows directly
@@ -192,6 +193,7 @@ plt.ylabel("Survival probability")
 plt.title("Kaplan-Meier survival curves (training set)")
 plt.legend()
 plt.tight_layout()
+plt.show()
 
 # %%
 # Women have a consistently higher survival probability than men
@@ -249,6 +251,7 @@ for ax in axes:
     ax.set_xlabel("Months")
 axes[0].set_ylabel("Predicted survival probability")
 fig.tight_layout()
+plt.show()
 
 # %%
 # The youngest participants' predicted survival stays close to 1

@@ -94,6 +94,7 @@ sns.histplot(
 plt.xlabel("hours before ICU admission (log scale)")
 plt.title("Distribution shift in the delay before ICU admission")
 plt.tight_layout()
+plt.show()
 
 # %%
 # The other covariates are almost unaffected by the shift - this is a
@@ -107,6 +108,7 @@ sns.histplot(
 plt.xlabel("diastolic blood pressure (mmHg)")
 plt.title("Diastolic blood pressure is barely affected by the shift")
 plt.tight_layout()
+plt.show()
 
 # %%
 # Model fitting and prediction
@@ -270,6 +272,7 @@ for i in range(2):
 axes[0].set_ylabel("probability of sepsis")
 axes[1].legend(fontsize=8)
 fig.tight_layout()
+plt.show()
 
 # %%
 # On the study population (left), admission delays are spread across
