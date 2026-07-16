@@ -11,7 +11,7 @@ entirely in your browser.
 
 .. sidebar:: Running the examples
 
-    Each example page has a **Launch** button at the top that opens the
+    Each example page has **Launch** buttons at the top that open the
     corresponding notebook in your browser with JupyterLite.
 
 .. include:: auto_examples/index.rst

@@ -13,6 +13,12 @@ div.sidebar, aside.sidebar {
     width: 30ex;
 }
 
+/* Our matplotrc gives us very big fonts, we can make figures smaller */
+.sphx-glr-single-img {
+  max-width: 70ex;
+  max-height: 50ex;
+}
+
 /* Hide-on-scroll-down / show-on-scroll-up for the top navbar */
 .bd-header {
     position: sticky;
