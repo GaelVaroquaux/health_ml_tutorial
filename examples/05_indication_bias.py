@@ -114,10 +114,12 @@ for threshold in thresholds:
     )
 
 # %%
-# The naive estimate does not just look biased - it is not even stable.
-# With a 3h cutoff, "fast" patients look *worse off* than "slow" ones.
-# With a 24h cutoff, the sign flips: "fast" patients now look *better
-# off*. A real effect of shortening delay should not change sign
+# The naive estimate tell us that:
+#
+# * With a 3h cutoff, "fast" patients look *worse off* than "slow" ones.
+# * With a 24h cutoff, the sign flips: "fast" patients now look *better off*.
+#
+#A real effect of shortening delay should not change sign
 # depending on where we happen to draw an arbitrary line. This instability
 # is itself strong evidence that the naive comparison is not measuring a
 # causal effect of delay, but rather picking up who ends up in each
@@ -132,8 +134,8 @@ for threshold in thresholds:
 # at once.
 
 # %%
-# Adjusting with a predictive model - but the model has to be flexible enough
-# ==================================================================================
+# Adjusting with a predictive model: which model matters
+# ========================================================
 #
 # Rather than collapsing delay into two groups, we can model sepsis
 # from the vitals *and* the delay, then ask the model to predict sepsis
@@ -141,9 +143,9 @@ for threshold in thresholds:
 # own vitals fixed. Averaging these counterfactual predictions traces
 # out a *dose-response curve*: what sepsis risk would look like, patient
 # by patient, if delay had been some given value instead of what it
-# actually was. This is the same idea as the G-formula in the earlier
-# version of this example, now applied to a continuous exposure - and it
-# is exactly the ``partial_dependence`` tool used in examples 03 and 04.
+# actually was. This is the idea of the "G-formula" applied to a
+# continuous exposure (or "treatment"), strongly related to the
+# ``partial_dependence`` tool used in examples 03 and 04.
 
 import numpy as np
 from sklearn.inspection import partial_dependence
@@ -174,7 +176,7 @@ plt.plot(pd_linear["grid_values"][0], pd_linear["average"][0], label="adjusted, 
 plt.plot(pd_flexible["grid_values"][0], pd_flexible["average"][0], label="adjusted, gradient boosting")
 plt.xlabel("hours before ICU admission")
 plt.ylabel("sepsis rate / predicted sepsis probability")
-plt.title("Adjusting for vitals: the model's flexibility changes the answer")
+plt.title("Adjusting for vitals:\nthe model's flexibility changes the answer")
 plt.legend()
 plt.tight_layout()
 plt.show()
@@ -201,8 +203,23 @@ plt.show()
 # Here the stakes are higher than prediction accuracy - a wrong model
 # leads to a wrong policy conclusion.
 
+# Model selection for causal reasonning
+# --------------------------------------
+#
+# Selecting the right model is
+# important, and it is not just a case of taking the one that predicts
+# best on the observed data, but rather one that extrapolates well from a
+# treated individual to an untreated or vice-versa.
+#
+# **Reference** This is precisely the challenge described in
+# Doutreligne and Varoquaux (2025), "How to select predictive models for
+# decision-making or causal inference", GigaScience:
+# https://doi.org/10.1093/gigascience/giaf016 - predictive accuracy on
+# the observed outcome does not, by itself, tell us which model to trust
+# for a causal question, we need adjusted risks.
+
 # %%
-# A second opinion: inverse probability weighting
+# An causal estimator: inverse probability weighting
 # =====================================================
 #
 # A different strategy models *who becomes "fast" or "slow"* rather than
@@ -224,7 +241,7 @@ plt.hist(propensity_score[df["fast"] == 0], bins=40, density=True, alpha=0.6, la
 plt.hist(propensity_score[df["fast"] == 1], bins=40, density=True, alpha=0.6, label="fast")
 plt.xlabel("estimated propensity of being admitted fast")
 plt.ylabel("density")
-plt.title("Overlap between the fast and slow groups' propensity scores")
+plt.title("Overlap between the fast and slow groups'\n propensity scores")
 plt.legend()
 plt.tight_layout()
 plt.show()
@@ -259,10 +276,4 @@ print(f"Inverse probability weighting:   {ipw_effect:+.4f}")
 # It is that the naive comparison is self-contradictory, that a flexible
 # outcome model uncovers structure a linear one cannot see, and that our
 # adjustment - by any method - is only as good as the confounders we
-# actually measured. This is precisely the challenge described in
-# Doutreligne and Varoquaux (2025), "How to select predictive models for
-# decision-making or causal inference", GigaScience:
-# https://doi.org/10.1093/gigascience/giaf016 - predictive accuracy on
-# the observed outcome does not, by itself, tell us which model to trust
-# for a causal question, and with real data we rarely get to check our
-# answer against a known ground truth at all.
+# actually measured.
