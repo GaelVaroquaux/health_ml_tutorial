@@ -1,6 +1,11 @@
 """
-Under-fitting, over-fitting, and the role of sample size
-============================================================
+Trade-offs in model flexibility
+================================
+
+More flexible models are not always better: they need a lot of data
+(100k individuals is small by machine-learning standards, though much
+large than typical health dataset). The risk of using too flexible a model
+is to capture noise.
 
 Using the same PhysioNet sepsis data as the previous example, we push a
 single, easy-to-reason-about "flexibility" knob - the maximum depth of a
@@ -15,12 +20,19 @@ model from over-fitting to a good fit.
 # ----------------------------------------
 
 import pandas as pd
-from sklearn.model_selection import train_test_split
-
 df = pd.read_csv("physionet_sepsis.csv")
+
+# %%
+# Quick display of the data
+from skrub import TableReport
+TableReport(df)
+
+# %%
+# Our features, target, and a train-test split
 X = df.drop(columns=["sepsis"])
 y = df["sepsis"]
 
+from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, stratify=y, random_state=0
 )
@@ -30,7 +42,8 @@ X_train, X_test, y_train, y_test = train_test_split(
 # ----------------------------------------------------
 #
 # A decision tree predicts by asking a sequence of yes/no questions
-# about the covariates. Its ``max_depth`` sets how many questions can be
+# about the covariates, which end up defining bins for continuous
+# variables. Its ``max_depth`` sets how many questions can be
 # chained before making a prediction: a shallow tree can only represent
 # a simple, rigid rule, while a deep tree can carve out a rule specific
 # to almost every individual patient in the training set.

@@ -29,11 +29,7 @@ methods against, so here we use real PhysioNet sepsis covariates, but
 simulate the treatment assignment and the outcome ourselves, with a
 treatment effect we fix in advance. This lets us compare every
 estimate to a known ground truth - something we could never do with
-purely real data - while keeping the confounding realistic. This
-follows the discussion in Doutreligne and Varoquaux (2025), "How to
-select predictive models for decision-making or causal inference",
-GigaScience, which shows that a model's *predictive* accuracy does not
-tell you how good it will be at estimating a *causal* effect.
+purely real data - while keeping the confounding realistic. 
 
 |
 
@@ -251,7 +247,13 @@ print(f"Naive difference in means: {naive_effect:+.2f}")
 #
 # The gradient boosting model happens to combine strong held-out
 # prediction with a G-formula estimate close to the true effect - but
-# nothing in the prediction score alone told us this in advance.
+# the prediction score alone cannot garantee this.
+#
+# **Reference** Doutreligne and Varoquaux (2025), "How to select
+# predictive models for decision-making or causal inference",
+# GigaScience, which shows that a model's *predictive* accuracy does not
+# tell you how good it will be at estimating a *causal* effect.
+# https://doi.org/10.1093/gigascience/giaf016
 
 # %%
 # Inverse probability weighting
