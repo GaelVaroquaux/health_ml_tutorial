@@ -1,10 +1,19 @@
 """
-Predicting 5-year mortality
-============================
+An epidemiological study: Predicting 5-year mortality
+======================================================
 
-We predict 5-year mortality from the NHANES covariates, inspect features
-importance, and look at partial dependence plots to understand how the model
-uses covariates to predict.
+The NHANES study has been runs dietary interviews and blood tests for
+several decade to measure the nutritional status of U.S. adults and
+children and relate it to health.
+
+Here we use models to predict 5-year mortality from the NHANES
+covariates. We use both a simple model (a linear, that is a classic tool
+in epidemiology) and a more flexible machine learning model.
+
+We show how to understand these models within the context of our specific
+question: mortality prediction. For this, we inspect features importance,
+and look at partial dependence plots to understand how the model uses
+covariates to predict.
 """
 
 # %%
