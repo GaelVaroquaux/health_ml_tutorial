@@ -1,0 +1,293 @@
+"""
+Survival analysis: accounting for censoring
+==============================================
+
+The NHANES mortality data is a *time-to-event* dataset: for each
+participant we know ``months_in_study`` (their follow-up duration) and
+``event`` (whether they died, or were still alive - "censored" - at the
+end of follow-up). Participants enrolled towards the end of the study
+simply have not been followed long enough to know if or when they will
+die: their true time to death is unknown, only a lower bound on it.
+
+We first show what goes wrong if this censoring is ignored: predicting
+"time to death" using only the participants who died. We then show how
+a proper survival model - ``SurvivalBoost`` from the `hazardous
+<https://soda-inria.github.io/hazardous/>`_ library - uses the censored
+participants too, without needing to know their exact time of death.
+"""
+
+# %%
+# Load the data
+# ---------------
+
+import pandas as pd
+
+df = pd.read_csv("nhanes_1999_2018_mortality.csv")
+
+X = df.drop(columns=["participant_id", "cycle", "months_in_study", "event"])
+duration = df["months_in_study"]
+is_dead = df["event"] == "deceased"
+
+print("Number of participants:", len(df))
+print("Deaths observed:", is_dead.sum())
+print("Still alive at the end of follow-up (censored):", (~is_dead).sum())
+
+# %%
+# The wrong way: dropping the censored participants
+# =======================================================
+#
+# A tempting shortcut is to only keep the participants who died, and
+# fit an ordinary regression model to predict how many months they
+# survived from their covariates. Participants still alive at the end
+# of follow-up are dropped, since we do not know their exact time of
+# death.
+
+from sklearn.model_selection import train_test_split
+from skrub import tabular_pipeline
+
+X_dead = X[is_dead]
+duration_dead = duration[is_dead]
+
+X_dead_train, X_dead_test, duration_dead_train, duration_dead_test = train_test_split(
+    X_dead, duration_dead, test_size=0.2, random_state=0
+)
+
+naive_model = tabular_pipeline("regressor")
+naive_model.fit(X_dead_train, duration_dead_train)
+
+# %%
+# Evaluated the usual way, on a held-out set of participants who also
+# died, this model looks reasonable enough.
+
+from sklearn.metrics import mean_absolute_error, r2_score
+
+predicted_dead_test = naive_model.predict(X_dead_test)
+print(f"MAE on held-out deaths: {mean_absolute_error(duration_dead_test, predicted_dead_test):.1f} months")
+print(f"R2 on held-out deaths: {r2_score(duration_dead_test, predicted_dead_test):.3f}")
+
+# %%
+# Why it is biased
+# --------------------
+#
+# Now apply this same model to the participants it never saw: the ones
+# who were still alive at the end of follow-up. For them, we do not
+# know their true time to death, but we do know a lower bound on it:
+# they survived at least ``months_in_study``, since that is how long
+# they were observed to still be alive.
+#
+# If the model's predicted time to death is *less* than that lower
+# bound, the prediction is not just inaccurate - it is logically
+# impossible: the model predicts these participants should already be
+# dead, when we know for a fact they were not.
+
+X_censored = X[~is_dead]
+already_survived = duration[~is_dead]
+predicted_censored = naive_model.predict(X_censored)
+
+impossible = predicted_censored < already_survived.values
+print(f"Fraction of censored participants with an impossible prediction: {impossible.mean():.1%}")
+print(f"Mean predicted time to death (censored): {predicted_censored.mean():.1f} months")
+print(f"Mean months already survived (censored): {already_survived.mean():.1f} months")
+
+# %%
+# Almost 6 out of 10 censored participants get an impossible
+# prediction. The figure below makes the mechanism clear: predicted
+# time to death is squeezed into a narrow range around the middle of
+# the follow-up window, while participants have already survived up to
+# the full length of the study.
+
+import matplotlib.pyplot as plt
+
+plt.figure()
+plt.hist(predicted_censored, bins=50, density=True, alpha=0.6,
+         label="predicted time to death")
+plt.hist(already_survived, bins=50, density=True, alpha=0.6,
+         label="months already survived (known lower bound)")
+plt.xlabel("months")
+plt.ylabel("density")
+plt.title("A model trained on deaths only, applied to censored participants")
+plt.legend()
+plt.tight_layout()
+
+# %%
+# This is not a fluke of this particular model: it follows directly
+# from dropping the censored participants. Among people who died during
+# the study, none of them could have been the healthiest, longest-lived
+# participants - those are exactly the ones still alive, and excluded.
+# The model only ever learns from a population selected for dying
+# within the follow-up window, so it has no way to predict a survival
+# time longer than that window, no matter who it is asked about.
+
+# %%
+# Survival analysis: accounting for censoring properly
+# ==========================================================
+#
+# A survival model uses *all* participants, including the censored
+# ones, by working with two pieces of information for each of them:
+# whether the event happened (``event``), and for how long they were
+# observed (``duration``) - censored or not.
+
+y = pd.DataFrame({
+    "event": is_dead.astype(int),
+    "duration": duration,
+})
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=0
+)
+
+# %%
+# The Kaplan-Meier estimator
+# ------------------------------
+#
+# Before fitting any model, the Kaplan-Meier estimator gives a
+# non-parametric estimate of the population's survival curve - the
+# probability of still being alive at each point in time - using both
+# the deaths and the censored participants.
+
+
+def kaplan_meier(duration_values, event_values):
+    order = duration_values.argsort()
+    sorted_duration = duration_values.values[order]
+    sorted_event = event_values.values[order]
+    n_at_risk = range(len(sorted_duration), 0, -1)
+    survival = 1.0
+    survival_curve = [1.0]
+    for died, n in zip(sorted_event, n_at_risk):
+        if died:
+            survival = survival * (1 - 1 / n)
+        survival_curve.append(survival)
+    time_points = [0] + list(sorted_duration)
+    return time_points, survival_curve
+
+
+plt.figure()
+time_points, survival_curve = kaplan_meier(y_train["duration"], y_train["event"])
+plt.step(time_points, survival_curve, where="post", color="black", label="Whole population")
+
+sex_colors = {"M": "tab:blue", "F": "tab:orange"}
+for sex_value, color in sex_colors.items():
+    is_sex = X_train["sex"] == sex_value
+    time_points_sex, survival_curve_sex = kaplan_meier(
+        y_train.loc[is_sex, "duration"], y_train.loc[is_sex, "event"]
+    )
+    plt.step(time_points_sex, survival_curve_sex, where="post", color=color,
+             label=f"sex = {sex_value}")
+
+plt.xlabel("Months")
+plt.ylabel("Survival probability")
+plt.title("Kaplan-Meier survival curves (training set)")
+plt.legend()
+plt.tight_layout()
+
+# %%
+# Women have a consistently higher survival probability than men
+# throughout the follow-up period - a well known epidemiological
+# pattern, and a good sanity check that the estimator behaves sensibly.
+
+# %%
+# Fitting SurvivalBoost
+# -------------------------
+#
+# ``SurvivalBoost`` is a gradient-boosted survival model: rather than
+# predicting a single number, it predicts a whole survival curve for
+# each participant, using every participant - censored or not - during
+# training.
+
+from hazardous import SurvivalBoost
+
+survival_model = tabular_pipeline(
+    SurvivalBoost(n_iter=50, show_progressbar=False, random_state=0)
+)
+survival_model.fit(X_train, y_train)
+
+# %%
+# Predicted survival curves: younger vs older participants
+# ---------------------------------------------------------------
+#
+# We compare the predicted survival curves of the 15 youngest and 15
+# oldest participants in the test set.
+
+survival_boost_model = survival_model.named_steps["survivalboost"]
+times = survival_boost_model.time_grid_
+
+X_test_transformed = survival_model[:-1].transform(X_test)
+predicted_survival_test = survival_boost_model.predict_survival_function(X_test_transformed)
+
+age_order = X_test["age"].values.argsort()
+youngest_index = age_order[:15]
+oldest_index = age_order[-15:]
+
+fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), sharey=True)
+
+for index in youngest_index:
+    axes[0].plot(times, predicted_survival_test[index], color="tab:blue", alpha=0.5)
+for index in oldest_index:
+    axes[1].plot(times, predicted_survival_test[index], color="tab:red", alpha=0.5)
+
+axes[0].set_title("15 youngest participants")
+axes[1].set_title("15 oldest participants")
+for ax in axes:
+    ax.set_xlabel("Months")
+axes[0].set_ylabel("Predicted survival probability")
+fig.tight_layout()
+
+# %%
+# The youngest participants' predicted survival stays close to 1
+# throughout follow-up, while the oldest participants' predicted
+# survival declines much faster and more steeply - exactly the pattern
+# we would expect, and something the naive regression from the first
+# section has no way to express at all.
+
+# %%
+# Calibration: does the predicted risk match what actually happens?
+# -----------------------------------------------------------------------
+#
+# The integrated Brier score summarizes, across the whole follow-up
+# period, how far predicted survival probabilities are from the actual
+# outcomes - lower is better.
+
+from hazardous.metrics import integrated_brier_score_survival
+
+ibs = integrated_brier_score_survival(y_train, y_test, predicted_survival_test, times)
+print(f"Integrated Brier score (test set): {ibs:.3f}")
+
+# %%
+# No impossible predictions
+# -----------------------------
+#
+# Finally, we repeat the same check as in the first section: for each
+# censored participant, does the model at least acknowledge they were
+# alive at the time we know they were? We read, for every test
+# participant, the predicted survival probability at their own
+# ``duration`` - the exact time of death for those who died, or the
+# last known "still alive" time for those censored.
+
+import numpy as np
+
+survival_probability_at_own_time = np.zeros(len(X_test))
+for i in range(len(X_test)):
+    survival_probability_at_own_time[i] = np.interp(
+        y_test["duration"].values[i], times, predicted_survival_test[i]
+    )
+
+is_censored_test = y_test["event"].values == 0
+print(
+    "Mean predicted survival probability at participants' own censoring time "
+    f"(censored): {survival_probability_at_own_time[is_censored_test].mean():.3f}"
+)
+print(
+    "Mean predicted survival probability at participants' own time of death "
+    f"(deaths): {survival_probability_at_own_time[~is_censored_test].mean():.3f}"
+)
+
+# %%
+# Censored participants get a mean predicted survival probability of
+# about 0.9 at the exact time we know they were still alive - close to
+# certainty, and correctly so. Participants who died get a
+# substantially lower predicted survival probability at their own time
+# of death. Unlike the naive regression, the survival model never
+# contradicts what we already know about a participant's outcome - it
+# simply has no mechanism to, since it was built from the start to
+# represent that some participants' true time to event is only known to
+# be "later than this".

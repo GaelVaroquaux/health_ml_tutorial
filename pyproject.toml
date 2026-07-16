@@ -11,8 +11,7 @@ requires-python = ">=3.9"
 dependencies = [
     "numpy",
     "matplotlib",
-    # hazardous 0.1.0 uses the `force_all_finite` argument removed in scikit-learn 1.6
-    "scikit-learn<1.6",
+    "scikit-learn",
     "pandas",
     "hazardous",
     "skrub",
