@@ -13,6 +13,14 @@ decision tree - hard in both directions, to see under-fitting and
 over-fitting happen concretely. We then look at why averaging many trees
 (a random forest) tames over-fitting, and how more data pushes the same
 model from over-fitting to a good fit.
+
+Learning objectives and take home messages
+-------------------------------------------
+
+**This notebook shows how the most flexible model is not always the
+best.**
+
+It can be skipped if you're in a hurry.
 """
 
 # %%

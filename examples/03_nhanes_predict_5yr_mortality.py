@@ -14,6 +14,15 @@ We show how to understand these models within the context of our specific
 question: mortality prediction. For this, we inspect features importance,
 and look at partial dependence plots to understand how the model uses
 covariates to predict.
+
+Learning objectives and take home messages
+-------------------------------------------
+
+**This notebook introduces a dataset and can be seen as a baseline for
+the later notebook on survival analysis.**
+
+It can be skipped unless you have a particular interest in this type of
+datasets.
 """
 
 # %%

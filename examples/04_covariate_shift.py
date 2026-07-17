@@ -21,6 +21,22 @@ on one hospital's mixed case load to a unit that mostly receives direct
 ICU admissions. We show that a linear model, that looks reasonable on
 the study population, ranks patients *worse than chance* on the target
 population, while a non-linear model does not degrade at all.
+
+Learning objectives and take home messages
+-------------------------------------------
+
+**If the target population is a mere subsampling of the study population
+but the link between X and y is preserved, this is known as a "covariate
+shift" setting. Good performance on the target population can be achieved
+with a very flexible model, which then requires a lot of data in the
+study population. Not that, as we'll see in the following notebooks, this
+is not a universal recipe, as not every distribution shift is a
+covariates shift.**
+
+**Reference**: Dockès, J., Varoquaux, G., & Poline, J. B. (2021).
+Preventing dataset shift from breaking machine-learning biomarkers.
+GigaScience, 10(9), giab055.
+https://doi.org/10.1093/gigascience/giab055
 """
 
 # %%

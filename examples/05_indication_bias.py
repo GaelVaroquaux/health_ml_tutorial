@@ -30,7 +30,22 @@ more careful ones at least remove the most obvious contradictions.
 
 |
 
-**Reference** Useful big-picture reading: Abécassis, J., Dumas, É.,
+Learning objectives and take home messages
+-------------------------------------------
+
+**Reasonning on interventions requires to contrast the outcome predict by
+the model in the two potential scenarios that underpin the putative
+intervention: counterfactual reasonning. The challenge is that the model
+has likely been trained in settings where the two scenarios are applied
+to different populations that are not comparable (eg treatment given only
+to more sick individuals). Valid counterfactual reasonning requires a set
+of covariates sufficient to explain out this difference, accounting for
+the baseline (capturing the complete set of counfounding effects). In
+addition a good model must then predict well both treated and untreated
+outome, which is a different error to control than a standard predictive
+model.**
+
+**Reading** Useful big-picture reading: Abécassis, J., Dumas, É.,
 Alberge, J., & Varoquaux, G. (2025). *From prediction to prescription:
 Machine learning and causal inference for the heterogeneous treatment
 effect.* Annual Review of Biomedical Data Science, 8.

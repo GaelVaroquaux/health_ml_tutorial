@@ -8,6 +8,12 @@ covariates: age, sex, the delay between hospital and ICU admission, and
 diastolic blood pressure. We compare a linear and a non-linear model, and
 look at partial dependence plots to understand how the non-linear model
 uses these covariates to predict.
+
+Learning objectives and take home messages
+-------------------------------------------
+
+**This notebook introduces a health dataset and develops intuitions on
+predictive models on this dataset.**
 """
 
 # %%
