@@ -18,6 +18,16 @@ We first show what goes wrong if this censoring is ignored: predicting
 a proper survival model - ``SurvivalBoost`` from the `hazardous
 <https://soda-inria.github.io/hazardous/>`_ library - uses the censored
 participants too, without needing to know their exact time of death.
+
+Learning objectives and take home messages
+-------------------------------------------
+
+**When following individuals to observe an event (such as death), the
+observation period may often be too small to observe this event for all
+individuals. Dropping the individuals for which the event is not observed
+creates a bias. The right solution is to use techniques known as
+"survival analysis"**
+
 """
 
 # %%
