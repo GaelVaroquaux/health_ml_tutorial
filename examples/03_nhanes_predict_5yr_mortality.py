@@ -15,11 +15,17 @@ question: mortality prediction. For this, we inspect features importance,
 and look at partial dependence plots to understand how the model uses
 covariates to predict.
 
+Predicting a single yes/no outcome at a fixed horizon (here, 5 years)
+like this is itself a common way of side-stepping censoring - the
+"finite-horizon" approach revisited, and contrasted with full survival
+analysis, in the last notebook.
+
 Learning objectives and take home messages
 -------------------------------------------
 
-**This notebook introduces a dataset and can be seen as a baseline for
-the later notebook on survival analysis.**
+**This notebook introduces a dataset, and the finite-horizon approach to
+a time-to-event question - both used as a baseline for the later notebook
+on survival analysis.**
 
 It can be skipped unless you have a particular interest in this type of
 datasets.
@@ -230,128 +236,14 @@ plt.legend()
 plt.tight_layout()
 plt.show()
 
-
 # %%
-# Partial dependence of age, by race/ethnicity
-# -----------------------------------------------
-
-race_markers = {
-    "Mexican American": "o",
-    "Other Hispanic": "^",
-    "Non-Hispanic White": "s",
-    "Non-Hispanic Black": "D",
-    "Other Race - Including Multi-Racial": "P",
-}
-
-plt.figure(figsize=(7, 5))
-
-plt.plot(pd_population_nonlinear["grid_values"][0], pd_population_nonlinear["average"][0],
-         color="black", linewidth=2, label="Model prediction, averaged over whole population")
-
-for race_value in sorted(X_test["race_eth"].unique()):
-    is_race = X_test["race_eth"] == race_value
-    pd_race = partial_dependence(model_nonlinear, X_test[is_race], features=["age"], grid_resolution=30)
-    line, = plt.plot(pd_race["grid_values"][0], pd_race["average"][0],
-                     linewidth=2, label=f"Model prediction, averaged for race/ethnicity = {race_value}")
-    age_race_mean = (
-        pd.DataFrame({"age": X_test.loc[is_race, "age"], "y_test": y_test[is_race]})
-        .groupby("age", as_index=False)["y_test"].mean()
-    )
-    plt.plot(
-        age_race_mean["age"],
-        age_race_mean["y_test"],
-        color=line.get_color(),
-        linewidth=1,
-        linestyle="--",
-        marker=race_markers.get(race_value, "o"),
-        markersize=4,
-        label=f"Average 5 year mortality, race/ethnicity = {race_value}",
-    )
-
-plt.xlabel("age")
-plt.ylabel("predicted probability of death within 5 years")
-plt.title("Partial dependence of age, by race/ethnicity")
-plt.legend(fontsize=8)
-plt.tight_layout()
-plt.show()
-
-# %%
-# Partial dependence of age, by education
-# -------------------------------------------
+# The non-linear model's curve is close to the linear one here: with
+# age as the single dominant predictor of mortality, there is little
+# non-linear structure left to gain from extra flexibility.
 #
-# Education codes 7 ("refused") and 9 ("don't know") concern too few
-# participants to give a meaningful curve, so they are excluded here.
-
-education_labels = {
-    1.0: "less than 9th grade",
-    2.0: "9-11th grade",
-    3.0: "high school grad / GED",
-    4.0: "some college / AA degree",
-    5.0: "college graduate or above",
-}
-education_markers = {
-    1.0: "o",
-    2.0: "^",
-    3.0: "s",
-    4.0: "D",
-    5.0: "P",
-}
-
-plt.figure(figsize=(7, 5))
-
-plt.plot(pd_population_nonlinear["grid_values"][0], pd_population_nonlinear["average"][0],
-         color="black", linewidth=2, label="Model prediction, averaged over whole population")
-
-for education_value, education_label in education_labels.items():
-    is_education = X_test["education"] == education_value
-    pd_education = partial_dependence(model_nonlinear, X_test[is_education], features=["age"], grid_resolution=30)
-    line, = plt.plot(
-        pd_education["grid_values"][0],
-        pd_education["average"][0],
-        linewidth=2,
-        label=f"Model prediction, averaged for education = {education_label}",
-    )
-    age_education_mean = (
-        pd.DataFrame({"age": X_test.loc[is_education, "age"], "y_test": y_test[is_education]})
-        .groupby("age", as_index=False)["y_test"].mean()
-    )
-    plt.plot(
-        age_education_mean["age"],
-        age_education_mean["y_test"],
-        color=line.get_color(),
-        linewidth=1,
-        linestyle="--",
-        marker=education_markers[education_value],
-        markersize=4,
-        label=f"Average 5 year mortality, education = {education_label}",
-    )
-
-plt.xlabel("age")
-plt.ylabel("predicted probability of death within 5 years")
-plt.title("Partial dependence of age, by education")
-plt.legend(fontsize=8)
-plt.tight_layout()
-plt.show()
-
-# %%
-# 2D partial dependence: age and waist circumference
-# ------------------------------------------------------
-#
-# We drop rows with a missing waist circumference are dropped, to ease plotting,
-# though the model handes missing values
-
-X_test_complete = X_test.dropna(subset=["age", "waist_cm"])
-pd_age_waist = partial_dependence(
-    model_nonlinear, X_test_complete, features=["age", "waist_cm"], grid_resolution=30
-)
-age_grid, waist_grid = pd_age_waist["grid_values"]
-
-fig, ax = plt.subplots(figsize=(7, 5))
-cs = ax.contourf(age_grid, waist_grid, pd_age_waist["average"][0].T, levels=20, cmap="viridis")
-fig.colorbar(cs, ax=ax, label="predicted probability of death within 5 years")
-ax.set_xlabel("age")
-ax.set_ylabel("waist circumference (cm)")
-ax.set_title("Partial dependence of age and waist circumference")
-fig.tight_layout()
-plt.show()
+# Note that the data here is designed around a 5-year horizon. As such it
+# sidesteps a challenge: censoring. The survival analysis notebook
+# revisits this same dataset to get a full time-to-event answer instead,
+# using every participant's actual follow-up duration, however long or
+# short.
 

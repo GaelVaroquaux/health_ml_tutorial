@@ -249,3 +249,11 @@ plt.title("Dependency on admission delay - non linear model")
 plt.legend(fontsize=8)
 plt.tight_layout()
 plt.show()
+
+# %%
+# This is the core intuition to take away: a linear model can only ever
+# draw a straight line through this relationship, while a non-linear
+# model can follow it wherever the data goes - at the cost of also
+# following some of its noise. Comparing the two, alongside permutation
+# importance to see which covariates matter, is a first, general recipe
+# for inspecting any predictive model, not just this one.

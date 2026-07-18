@@ -31,8 +31,8 @@ creates a bias. The right solution is to use techniques known as
 """
 
 # %%
-# Load the data
-# ---------------
+# The data: an epidemiological cohort
+# -------------------------------------
 
 import pandas as pd
 

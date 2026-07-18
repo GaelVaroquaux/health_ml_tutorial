@@ -160,7 +160,7 @@ for threshold in thresholds:
 # by patient, if delay had been some given value instead of what it
 # actually was. This is the idea of the "G-formula" applied to a
 # continuous exposure (or "treatment"), strongly related to the
-# ``partial_dependence`` tool used in examples 03 and 04.
+# ``partial_dependence`` tool used in examples 02 and 04.
 
 import numpy as np
 from sklearn.inspection import partial_dependence
@@ -213,25 +213,28 @@ plt.show()
 # not (fully) captured by the vitals we adjusted for. A linear model
 # would never have revealed this distinction at all.
 #
-# This mirrors the exact lesson from examples 03 and 04: a model that
+# This mirrors the exact lesson from examples 02 and 04: a model that
 # cannot represent a non-linear relationship will get it wrong, silently.
 # Here the stakes are higher than prediction accuracy - a wrong model
 # leads to a wrong policy conclusion.
 
-# Model selection for causal reasonning
+# %%
+# Model selection for causal reasoning
 # --------------------------------------
 #
-# Selecting the right model is
-# important, and it is not just a case of taking the one that predicts
-# best on the observed data, but rather one that extrapolates well from a
-# treated individual to an untreated or vice-versa.
+# Choosing between the two models above is not just a matter of taking
+# the one that predicts best on observed data: a model also needs to
+# extrapolate well from patients admitted fast to what patients admitted
+# slowly would have looked like, and vice-versa - an error we have no
+# direct way to check, since we never observe both outcomes for the same
+# patient.
 #
 # **Reference** This is precisely the challenge described in
 # Doutreligne and Varoquaux (2025), "How to select predictive models for
 # decision-making or causal inference", GigaScience:
 # https://doi.org/10.1093/gigascience/giaf016 - predictive accuracy on
 # the observed outcome does not, by itself, tell us which model to trust
-# for a causal question, we need adjusted risks.
+# for a causal question.
 
 # %%
 # An causal estimator: inverse probability weighting

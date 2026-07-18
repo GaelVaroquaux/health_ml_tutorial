@@ -313,3 +313,8 @@ plt.show()
 # relationship can look fine while deployment data covers a wide range
 # of values, and still fail sharply once deployment data concentrates
 # on the one region where that misrepresentation matters most.
+#
+# A flexible enough model was all it took to fix this, because the link
+# between covariates and outcome itself never changed. The next
+# notebooks turn to biases where that is no longer true, and no amount
+# of model flexibility or data can fix things on its own.
