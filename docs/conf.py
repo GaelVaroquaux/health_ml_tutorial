@@ -109,6 +109,7 @@ html_theme_options = {
     "use_edit_page_button": False,
     "show_toc_level": 2,
     "secondary_sidebar_items": {},
+    "footer_start": ["gael_footer.html"],
     # Adds the built-in pydata-sphinx-theme collapse/expand toggle button
     # at the bottom of the primary (left) sidebar. On small screens the
     # sidebar already collapses automatically via Bootstrap responsive
