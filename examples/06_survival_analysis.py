@@ -26,7 +26,7 @@ Learning objectives and take home messages
 observation period may often be too small to observe this event for all
 individuals. Dropping the individuals for which the event is not observed
 creates a bias. The right solution is to use techniques known as
-"survival analysis"**
+"survival analysis".**
 
 """
 
@@ -348,3 +348,25 @@ print(
 # simply has no mechanism to, since it was built from the start to
 # represent that some participants' true time to event is only known to
 # be "later than this".
+
+# %%
+# Another approach: finite horizon
+# ---------------------------------
+#
+# Another way to avoid biases with such righ-censored data is to do a
+# finite-horizon analysis: rather than computing the time that it takes
+# for a given individual to die, choose a time horizon (eg 5 years), keep
+# only individuals that have been observed more than this time, and
+# classify whether after 5 years they were alive or not. This is what we
+# did in the first notebook introducing this dataset. The first drawback
+# of this approach is that it does not give an estimated time, but rather
+# a yes/no answer after a given horizon. One can then use multiple
+# horizons but, by treating each horizon separately, such an approach is
+# less powerful statistically to capture the link between the covariates
+# and the outcome: giving personnalized time-to-events for a given X. It
+# is particularly inefficient at long time horizons, where the censoring
+# depletes massively the cohort. A survival analysis model can learn the
+# link between covariates X and survival for small time horizons where
+# there are many non censored observations, and extrapolate it to large
+# time horizons.
+
